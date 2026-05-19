@@ -1,0 +1,6 @@
+{
+  "name": "SkillSpark",
+  "description": "A sports practice tracker for kids to master soccer and lacrosse drills while earning rewards.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
