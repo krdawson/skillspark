@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import confetti from 'canvas-confetti';
-import { Profile, Drill, Goal, DailyLog, Sport, DrillType, GoalType } from '../types';
+import { Profile, Drill, Goal, DailyLog, DrillRating, Sport, DrillType, GoalType } from '../types';
 import { INITIAL_DRILLS } from '../constants';
 import { BADGE_DEFINITIONS } from '../lib/badges';
 import { calculateStreak, calculateLevelData } from '../lib/utils';
-import { supabase, FAMILY_ID, toProfile, toDrill, toGoal, toLog, fromProfile, fromDrill, fromGoal, fromLog } from '../lib/supabase';
+import { supabase, FAMILY_ID, toProfile, toDrill, toGoal, toLog, toRating, fromProfile, fromDrill, fromGoal, fromLog, fromRating } from '../lib/supabase';
 
 // ── Default seed data ───────────────────────────────────────────────────────
 
@@ -57,6 +57,7 @@ export function useAppState() {
   const [goals, setGoals]       = useState<Goal[]>([]);
   const [history, setHistory]   = useState<DailyLog[]>([]);
   const [dailyCompleted, setDailyCompleted] = useState<Record<string, boolean>>({});
+  const [ratings, setRatings] = useState<DrillRating[]>([]);
   const [adminPin, setAdminPinState]         = useState('1234');
   const [theme, setTheme]                    = useState<'light' | 'dark'>('light');
   const [notificationTime, setNotificationTime]       = useState('09:00');
@@ -149,12 +150,14 @@ export function useAppState() {
         { data: drillRows },
         { data: goalRows },
         { data: logRows },
+        { data: ratingRows },
         { data: settingsRow },
       ] = await Promise.all([
         supabase.from('profiles').select('*').eq('family_id', FAMILY_ID),
         supabase.from('drills').select('*').eq('family_id', FAMILY_ID),
         supabase.from('goals').select('*').eq('family_id', FAMILY_ID),
         supabase.from('daily_logs').select('*').eq('family_id', FAMILY_ID),
+        supabase.from('drill_ratings').select('*').eq('family_id', FAMILY_ID),
         supabase.from('settings').select('*').eq('family_id', FAMILY_ID).maybeSingle(),
       ]);
 
@@ -174,6 +177,7 @@ export function useAppState() {
       setDrills([...loadedDrills, ...missingDefaults]);
 
       setGoals(goalRows?.map(toGoal) ?? []);
+      setRatings(ratingRows?.map(toRating) ?? []);
 
       const logs = logRows?.map(toLog) ?? [];
       setHistory(logs);
@@ -480,6 +484,19 @@ export function useAppState() {
     showNotification('PIN updated! 🔒');
   }
 
+  // ── Drill ratings ─────────────────────────────────────────────────────────
+
+  function addDrillRating(drillId: string, liked: boolean, difficulty: 1 | 2 | 3, profileId: string) {
+    const rating: DrillRating = {
+      id: Math.random().toString(36).substr(2, 9),
+      profileId, drillId,
+      date: format(new Date(), 'yyyy-MM-dd'),
+      liked, difficulty,
+    };
+    setRatings(prev => [...prev, rating]);
+    supabase.from('drill_ratings').insert(fromRating(rating)).then();
+  }
+
   // ── Backup / Restore ──────────────────────────────────────────────────────
 
   function exportData() {
@@ -531,9 +548,10 @@ export function useAppState() {
 
   return {
     isLoading,
-    theme, profiles, drills, goals, dailyCompleted, history, adminPin, notification,
+    theme, profiles, drills, goals, dailyCompleted, history, ratings, adminPin, notification,
     toggleTheme, showNotification, triggerConfetti,
     toggleDrill, addDrill, updateDrill, deleteDrill,
+    addDrillRating,
     addProfile, updateProfile,
     addGoal, updateGoal, deleteGoal,
     changeAdminPin, exportData, importData,

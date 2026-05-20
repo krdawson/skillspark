@@ -48,3 +48,12 @@ export interface DailyLog {
   date: string;
   completedDrillIds: string[];
 }
+
+export interface DrillRating {
+  id: string;
+  profileId: string;
+  drillId: string;
+  date: string;
+  liked: boolean;
+  difficulty: 1 | 2 | 3;
+}

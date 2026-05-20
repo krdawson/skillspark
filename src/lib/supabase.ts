@@ -35,6 +35,11 @@ export const toLog = (r: any) => ({
   completedDrillIds: r.completed_drill_ids ?? [],
 });
 
+export const toRating = (r: any) => ({
+  id: r.id, profileId: r.profile_id, drillId: r.drill_id,
+  date: r.date, liked: r.liked, difficulty: r.difficulty as 1 | 2 | 3,
+});
+
 // ── App type → Row mappers ──────────────────────────────────────────────────
 
 export const fromProfile = (p: any) => ({
@@ -59,4 +64,9 @@ export const fromGoal = (g: any) => ({
 export const fromLog = (l: any) => ({
   id: l.id, family_id: FAMILY_ID, profile_id: l.profileId,
   date: l.date, completed_drill_ids: l.completedDrillIds,
+});
+
+export const fromRating = (r: any) => ({
+  id: r.id, family_id: FAMILY_ID, profile_id: r.profileId,
+  drill_id: r.drillId, date: r.date, liked: r.liked, difficulty: r.difficulty,
 });

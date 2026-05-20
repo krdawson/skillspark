@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, Flame, Trophy, Medal, CheckCircle2, Timer } from 'lucide-react';
 import { format } from 'date-fns';
-import { Profile, Goal, DailyLog, Drill } from '../types';
+import { Profile, Goal, DailyLog, Drill, DrillRating } from '../types';
 import { cn } from '../lib/cn';
 import { calculateLevelData } from '../lib/utils';
 import { getTodaysDrills } from '../lib/drills';
@@ -16,13 +16,15 @@ interface Props {
   goals: Goal[];
   dailyCompleted: Record<string, boolean>;
   history: DailyLog[];
+  ratings: DrillRating[];
   calculateStreak: (profileId: string) => number;
   toggleDrill: (drillId: string, profile: Profile) => void;
+  addDrillRating: (drillId: string, liked: boolean, difficulty: 1 | 2 | 3, profileId: string) => void;
   subscribeToNotifications: (profileId: string) => Promise<boolean>;
   onBack: () => void;
 }
 
-export default function DashboardView({ activeProfile, drills, goals, dailyCompleted, history, calculateStreak, toggleDrill, subscribeToNotifications, onBack }: Props) {
+export default function DashboardView({ activeProfile, drills, goals, dailyCompleted, history, ratings, calculateStreak, toggleDrill, addDrillRating, subscribeToNotifications, onBack }: Props) {
   const [tab, setTab] = useState<'today' | 'history'>('today');
   const [notifGranted, setNotifGranted] = useState(() =>
     'Notification' in window && Notification.permission === 'granted'
@@ -43,7 +45,8 @@ export default function DashboardView({ activeProfile, drills, goals, dailyCompl
     }
   }
 
-  const todaysDrills = getTodaysDrills(drills, activeProfile);
+  const profileRatings = ratings.filter(r => r.profileId === activeProfile.id);
+  const todaysDrills = getTodaysDrills(drills, activeProfile, profileRatings);
   const activeQuests = goals.filter(g => g.profileId === activeProfile.id || g.isTeam);
   const { level, currentXP, xpToNext } = calculateLevelData(activeProfile.xp || 0);
   const streak = calculateStreak(activeProfile.id);
@@ -139,6 +142,7 @@ export default function DashboardView({ activeProfile, drills, goals, dailyCompl
                   drill={drill}
                   isDone={!!dailyCompleted[`${activeProfile.id}-${drill.id}`]}
                   onToggle={() => toggleDrill(drill.id, activeProfile)}
+                  onRate={(liked, difficulty) => addDrillRating(drill.id, liked, difficulty, activeProfile.id)}
                 />
               ))}
               {todaysDrills.length === 0 && (

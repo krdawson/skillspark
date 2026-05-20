@@ -86,8 +86,10 @@ export default function App() {
               goals={state.goals}
               dailyCompleted={state.dailyCompleted}
               history={state.history}
+              ratings={state.ratings}
               calculateStreak={state.calculateStreak}
               toggleDrill={state.toggleDrill}
+              addDrillRating={state.addDrillRating}
               subscribeToNotifications={state.subscribeToNotifications}
               onBack={handleBack}
             />
@@ -99,6 +101,7 @@ export default function App() {
               drills={state.drills}
               goals={state.goals}
               history={state.history}
+              ratings={state.ratings}
               theme={state.theme}
               adminPin={state.adminPin}
               toggleTheme={state.toggleTheme}

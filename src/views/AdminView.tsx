@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Moon, Sun, Plus, Users, Trophy, Medal, Dumbbell, ChevronDown, RotateCcw, Download, Upload } from 'lucide-react';
 import { PROFILE_COLORS, getProfileColor } from '../lib/profileColors';
 import { format } from 'date-fns';
-import { Profile, Drill, Goal, DailyLog, Sport, DrillType, GoalType, Milestone } from '../types';
+import { Profile, Drill, Goal, DailyLog, DrillRating, Sport, DrillType, GoalType, Milestone } from '../types';
 import { cn } from '../lib/cn';
 import { calculateStreak as calcStreak } from '../lib/utils';
 import { PREDEFINED_REWARDS } from '../constants';
@@ -17,6 +17,7 @@ interface Props {
   drills: Drill[];
   goals: Goal[];
   history: DailyLog[];
+  ratings: DrillRating[];
   theme: 'light' | 'dark';
   adminPin: string;
   toggleTheme: () => void;
@@ -50,7 +51,7 @@ function newMilestone(): Milestone {
   return { id: Math.random().toString(36).substr(2, 9), target: 10, reward: '', isAchieved: false };
 }
 
-export default function AdminView({ profiles, drills, goals, history, theme, adminPin, toggleTheme, showNotification, addProfile, updateProfile, addDrill, updateDrill, deleteDrill, addGoal, updateGoal, deleteGoal, changeAdminPin, exportData, importData, notificationTime, notificationEnabled, updateNotificationSettings, subscribeToNotifications, onSignOut, onBack }: Props) {
+export default function AdminView({ profiles, drills, goals, history, ratings, theme, adminPin, toggleTheme, showNotification, addProfile, updateProfile, addDrill, updateDrill, deleteDrill, addGoal, updateGoal, deleteGoal, changeAdminPin, exportData, importData, notificationTime, notificationEnabled, updateNotificationSettings, subscribeToNotifications, onSignOut, onBack }: Props) {
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
 
   // Drill modal
@@ -435,6 +436,8 @@ export default function AdminView({ profiles, drills, goals, history, theme, adm
                       </div>
                     );
                   })}
+                  <DrillInsights ratings={ratings} drills={drills} profileId={p.id} />
+
                   <button
                     onClick={() => { setGoalForm({ type: 'total_drills', milestones: [], profileId: p.id }); setCreateGoalOpen(true); }}
                     className="w-full rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 py-2 text-[11px] font-black text-slate-400 uppercase tracking-wide hover:border-[#FF6321] hover:text-[#FF6321] transition-all"
@@ -984,6 +987,81 @@ export default function AdminView({ profiles, drills, goals, history, theme, adm
         {PREDEFINED_REWARDS.map(r => <option key={r} value={r} />)}
       </datalist>
     </motion.div>
+  );
+}
+
+const DIFF_LABEL: Record<number, string> = { 1: 'Easy', 2: 'Medium', 3: 'Hard' };
+
+function DrillInsights({ ratings, drills, profileId }: { ratings: DrillRating[]; drills: Drill[]; profileId: string }) {
+  const [open, setOpen] = useState(false);
+  const profileRatings = ratings.filter(r => r.profileId === profileId);
+
+  if (!profileRatings.length) return null;
+
+  // Aggregate per drill
+  const byDrill = profileRatings.reduce<Record<string, { liked: number; disliked: number; totalDiff: number; count: number }>>((acc, r) => {
+    if (!acc[r.drillId]) acc[r.drillId] = { liked: 0, disliked: 0, totalDiff: 0, count: 0 };
+    acc[r.drillId].liked    += r.liked ? 1 : 0;
+    acc[r.drillId].disliked += r.liked ? 0 : 1;
+    acc[r.drillId].totalDiff += r.difficulty;
+    acc[r.drillId].count    += 1;
+    return acc;
+  }, {});
+
+  const rows = Object.entries(byDrill)
+    .map(([drillId, stats]) => ({
+      drill: drills.find(d => d.id === drillId),
+      ...stats,
+      net: stats.liked - stats.disliked,
+      avgDiff: stats.totalDiff / stats.count,
+    }))
+    .filter(r => r.drill)
+    .sort((a, b) => b.net - a.net);
+
+  return (
+    <div className="rounded-2xl bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex w-full items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+      >
+        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+          Drill Insights · {profileRatings.length} rating{profileRatings.length !== 1 ? 's' : ''}
+        </p>
+        <ChevronDown size={14} className={cn('text-slate-300 transition-transform duration-200', open && 'rotate-180')} />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="border-t border-slate-50 dark:border-slate-800 overflow-hidden"
+          >
+            <div className="p-3 space-y-1.5 max-h-64 overflow-y-auto">
+              {rows.map(({ drill, liked, disliked, avgDiff, net }) => (
+                <div key={drill!.id} className="flex items-center gap-2 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold dark:text-slate-200 truncate">{drill!.title}</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0 text-[10px] font-black">
+                    <span className="text-green-500">👍 {liked}</span>
+                    <span className="text-red-400">👎 {disliked}</span>
+                    <span className={cn(
+                      'rounded-md px-1.5 py-0.5',
+                      avgDiff >= 2.5 ? 'bg-red-100 dark:bg-red-950/30 text-red-500' :
+                      avgDiff >= 1.5 ? 'bg-yellow-100 dark:bg-yellow-950/30 text-yellow-600' :
+                      'bg-green-100 dark:bg-green-950/30 text-green-600'
+                    )}>
+                      {DIFF_LABEL[Math.round(avgDiff)]}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 
