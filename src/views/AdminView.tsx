@@ -9,6 +9,7 @@ import { PREDEFINED_REWARDS } from '../constants';
 import Modal from '../components/Modal';
 import AdminDrillCard from '../components/AdminDrillCard';
 import RadialProgress from '../components/RadialProgress';
+import KidProgressCard from '../components/KidProgressCard';
 
 interface Props {
   profiles: Profile[];
@@ -199,6 +200,30 @@ export default function AdminView({ profiles, drills, goals, history, theme, adm
           <h2 className="text-2xl font-black dark:text-slate-100">Admin</h2>
         </div>
       </header>
+
+      {/* Kids Overview */}
+      {kidProfiles.length > 0 && (
+        <section className="mb-6">
+          <h3 className="text-lg font-bold mb-4 dark:text-slate-100">Kids Overview</h3>
+          <div className={cn(
+            'grid gap-4',
+            kidProfiles.length === 1 ? 'grid-cols-1 max-w-sm' :
+            kidProfiles.length === 2 ? 'sm:grid-cols-2' :
+            'sm:grid-cols-2 lg:grid-cols-3'
+          )}>
+            {kidProfiles.map(p => (
+              <KidProgressCard
+                key={p.id}
+                profile={p}
+                goals={goals}
+                history={history}
+                allProfiles={profiles}
+                onEdit={() => { setEditingProfile(p); setEditProfileOpen(true); }}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Kid Profiles */}
