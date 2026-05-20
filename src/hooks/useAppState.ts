@@ -108,15 +108,8 @@ export function useAppState() {
   });
 
   const [notification, setNotification] = useState<{ msg: string; isError: boolean } | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-
-  // Keyed by `${profileId}-${date}` — naturally expires each day
-  const [aiDrillCache, setAiDrillCache] = useState<Record<string, Drill[]>>(() => {
-    try { return JSON.parse(localStorage.getItem('aiDrillCache') || '{}'); } catch { return {}; }
-  });
 
   // Persistence
-  useEffect(() => { localStorage.setItem('aiDrillCache', JSON.stringify(aiDrillCache)); }, [aiDrillCache]);
   useEffect(() => { localStorage.setItem('theme', theme); }, [theme]);
   useEffect(() => { localStorage.setItem('profiles', JSON.stringify(profiles)); }, [profiles]);
   useEffect(() => { localStorage.setItem('drills', JSON.stringify(drills)); }, [drills]);
@@ -315,50 +308,6 @@ export function useAppState() {
     showNotification('PIN updated! 🔒');
   }
 
-  function getAiDrillsForToday(profileId: string): Drill[] | null {
-    const key = `${profileId}-${format(new Date(), 'yyyy-MM-dd')}`;
-    return aiDrillCache[key] ?? null;
-  }
-
-  async function generateDrills(profile: Profile) {
-    const today = format(new Date(), 'yyyy-MM-dd');
-    const cacheKey = `${profile.id}-${today}`;
-
-    // Recent drill titles from the last 7 days to avoid repeats
-    const recentDrills = history
-      .filter(h => h.profileId === profile.id)
-      .sort((a, b) => b.date.localeCompare(a.date))
-      .slice(0, 7)
-      .flatMap(h => h.completedDrillIds.map(id => drills.find(d => d.id === id)?.title))
-      .filter(Boolean) as string[];
-
-    setIsGenerating(true);
-    try {
-      const res = await fetch('/api/generate-drills', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sport: profile.sport, name: profile.name, drillsPerDay: profile.drillsPerDay, recentDrills }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Generation failed');
-
-      const withIds: Drill[] = data.drills.map((d: Omit<Drill, 'id' | 'sports'>) => ({
-        ...d,
-        id: `ai-${Math.random().toString(36).substr(2, 9)}`,
-        sports: [profile.sport as Sport],
-      }));
-
-      setAiDrillCache(prev => ({ ...prev, [cacheKey]: withIds }));
-      showNotification(`Fresh drills generated for ${profile.name}! ⚡`);
-    } catch (err: any) {
-      const msg: string = err?.message ?? 'Something went wrong';
-      showNotification(`AI error: ${msg}`, true);
-    } finally {
-      setIsGenerating(false);
-    }
-  }
-
   function exportData() {
     const payload = {
       version: 1,
@@ -403,7 +352,6 @@ export function useAppState() {
     addProfile, updateProfile,
     addGoal, updateGoal, deleteGoal,
     changeAdminPin, exportData, importData,
-    isGenerating, generateDrills, getAiDrillsForToday,
     calculateStreak: (profileId: string) => calculateStreak(profileId, history, profiles),
   };
 }

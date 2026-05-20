@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Flame, Trophy, Medal, CheckCircle2, Timer, Sparkles, RefreshCw } from 'lucide-react';
+import { motion } from 'motion/react';
+import { ArrowLeft, Flame, Trophy, Medal, CheckCircle2, Timer } from 'lucide-react';
 import { format } from 'date-fns';
 import { Profile, Goal, DailyLog, Drill } from '../types';
 import { cn } from '../lib/cn';
@@ -18,17 +18,13 @@ interface Props {
   history: DailyLog[];
   calculateStreak: (profileId: string) => number;
   toggleDrill: (drillId: string, profile: Profile) => void;
-  isGenerating: boolean;
-  generateDrills: (profile: Profile) => Promise<void>;
-  getAiDrillsForToday: (profileId: string) => Drill[] | null;
   onBack: () => void;
 }
 
-export default function DashboardView({ activeProfile, drills, goals, dailyCompleted, history, calculateStreak, toggleDrill, isGenerating, generateDrills, getAiDrillsForToday, onBack }: Props) {
+export default function DashboardView({ activeProfile, drills, goals, dailyCompleted, history, calculateStreak, toggleDrill, onBack }: Props) {
   const [tab, setTab] = useState<'today' | 'history'>('today');
 
-  const aiDrills = getAiDrillsForToday(activeProfile.id);
-  const todaysDrills = aiDrills ?? getTodaysDrills(drills, activeProfile);
+  const todaysDrills = getTodaysDrills(drills, activeProfile);
   const activeQuests = goals.filter(g => g.profileId === activeProfile.id || g.isTeam);
   const { level, currentXP, xpToNext } = calculateLevelData(activeProfile.xp || 0);
   const streak = calculateStreak(activeProfile.id);
@@ -176,49 +172,13 @@ export default function DashboardView({ activeProfile, drills, goals, dailyCompl
 
           <section className="space-y-4">
             <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-bold leading-tight">Today's Drills</h3>
-                {aiDrills && (
-                  <span className="text-[10px] font-black uppercase tracking-widest text-[#FF6321]">✨ AI Generated</span>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                {streak > 0 && (
-                  <div className="flex items-center gap-1 text-[#FF6321] font-black text-sm">
-                    <Flame size={16} />
-                    <span>{streak}</span>
-                  </div>
-                )}
-                <button
-                  onClick={() => generateDrills(activeProfile)}
-                  disabled={isGenerating}
-                  className={cn(
-                    'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-black uppercase tracking-wide transition-all',
-                    isGenerating
-                      ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-wait'
-                      : aiDrills
-                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'
-                        : 'bg-[#FF6321] text-white shadow-md hover:shadow-lg active:scale-95'
-                  )}
-                >
-                  <AnimatePresence mode="wait">
-                    {isGenerating ? (
-                      <motion.span key="spin" animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }} className="inline-block">
-                        <RefreshCw size={12} />
-                      </motion.span>
-                    ) : aiDrills ? (
-                      <motion.span key="refresh" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                        <RefreshCw size={12} />
-                      </motion.span>
-                    ) : (
-                      <motion.span key="spark" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                        <Sparkles size={12} />
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
-                  {isGenerating ? 'Generating…' : aiDrills ? 'Regenerate' : 'AI Drills'}
-                </button>
-              </div>
+              <h3 className="text-lg font-bold">Today's Drills</h3>
+              {streak > 0 && (
+                <div className="flex items-center gap-1 text-[#FF6321] font-black text-sm">
+                  <Flame size={16} />
+                  <span>{streak} Day Streak</span>
+                </div>
+              )}
             </div>
             <div className="grid gap-4">
               {todaysDrills.map(drill => (

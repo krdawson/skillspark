@@ -54,9 +54,6 @@ export default function App() {
             history={state.history}
             calculateStreak={state.calculateStreak}
             toggleDrill={state.toggleDrill}
-            isGenerating={state.isGenerating}
-            generateDrills={state.generateDrills}
-            getAiDrillsForToday={state.getAiDrillsForToday}
             onBack={handleBack}
           />
         )}

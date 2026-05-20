@@ -19,7 +19,7 @@ interface Props {
   theme: 'light' | 'dark';
   adminPin: string;
   toggleTheme: () => void;
-  showNotification: (msg: string) => void;
+  showNotification: (msg: string, isError?: boolean) => void;
   addProfile: (data: { name: string; sport: Sport; drillsPerDay: number }) => void;
   updateProfile: (profile: Profile) => void;
   addDrill: (data: Omit<Drill, 'id'>) => void;
@@ -71,6 +71,12 @@ export default function AdminView({ profiles, drills, goals, history, theme, adm
   // Backup modal
   const [backupModalOpen, setBackupModalOpen] = useState(false);
   const [restoring, setRestoring] = useState(false);
+
+  // AI drill generation
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [aiSport, setAiSport] = useState<'soccer' | 'lacrosse' | 'conditioning'>('soccer');
+  const [aiCount, setAiCount] = useState(5);
+  const [aiGenerating, setAiGenerating] = useState(false);
 
   const kidProfiles = profiles.filter(p => p.role === 'kid');
   const todayStr = format(new Date(), 'yyyy-MM-dd');
@@ -169,6 +175,43 @@ export default function AdminView({ profiles, drills, goals, history, theme, adm
     setPinModalOpen(false);
     setNewPin('');
     setConfirmPin('');
+  }
+
+  async function handleAiGenerate() {
+    setAiGenerating(true);
+    try {
+      const sport = aiSport === 'conditioning' ? 'soccer' : aiSport;
+      const res = await fetch('/api/generate-drills', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sport, name: 'Library', drillsPerDay: aiCount, recentDrills: [] }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Generation failed');
+
+      const sportMap: Record<string, Sport[]> = {
+        soccer: ['soccer'],
+        lacrosse: ['lacrosse'],
+        conditioning: ['soccer', 'lacrosse', 'both' as Sport],
+      };
+
+      data.drills.forEach((d: { title: string; description: string; reps: string; type: string }) => {
+        addDrill({
+          title: d.title,
+          description: d.description,
+          reps: d.reps,
+          type: d.type as DrillType,
+          sports: sportMap[aiSport],
+        });
+      });
+
+      showNotification(`${data.drills.length} drills added to library! ⚡`);
+      setAiModalOpen(false);
+    } catch (err: any) {
+      showNotification(`AI error: ${err?.message ?? 'Generation failed'}`, true);
+    } finally {
+      setAiGenerating(false);
+    }
   }
 
   function getCategoryDrills(catId: string) {
@@ -296,9 +339,18 @@ export default function AdminView({ profiles, drills, goals, history, theme, adm
         <section className="space-y-4 lg:col-span-1">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-bold dark:text-slate-100">Drill Library</h3>
-            <button onClick={openAddDrill} className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FF6321] text-white active:scale-90 shadow-md">
-              <Plus size={16} />
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setAiModalOpen(true)}
+                className="flex items-center gap-1.5 rounded-full bg-slate-800 dark:bg-slate-700 px-3 py-1.5 text-[10px] font-black text-white uppercase tracking-wide active:scale-90 shadow-md"
+                title="Generate drills with AI"
+              >
+                ✨ AI
+              </button>
+              <button onClick={openAddDrill} className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FF6321] text-white active:scale-90 shadow-md">
+                <Plus size={16} />
+              </button>
+            </div>
           </div>
           <div className="grid gap-3">
             {DRILL_CATEGORIES.map(cat => {
@@ -584,6 +636,56 @@ export default function AdminView({ profiles, drills, goals, history, theme, adm
             </button>
           </div>
         )}
+      </Modal>
+
+      {/* AI Drill Generation modal */}
+      <Modal isOpen={aiModalOpen} onClose={() => setAiModalOpen(false)} title="Generate Drills with AI">
+        <div className="space-y-4">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Generate new drills and add them directly to the library. Kids will see them in their daily rotation.
+          </p>
+          <div className="space-y-1">
+            <label className="text-xs font-bold uppercase text-[#9E9E9E]">Sport / Category</label>
+            <div className="grid grid-cols-3 gap-2">
+              {(['soccer', 'lacrosse', 'conditioning'] as const).map(s => (
+                <button
+                  key={s}
+                  onClick={() => setAiSport(s)}
+                  className={cn(
+                    'rounded-xl py-2.5 text-xs font-black uppercase transition-all capitalize',
+                    aiSport === s ? 'bg-[#FF6321] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                  )}
+                >
+                  {s === 'conditioning' ? 'Strength' : s}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-bold uppercase text-[#9E9E9E]">How many drills?</label>
+            <div className="flex gap-2">
+              {[5, 10, 15].map(n => (
+                <button
+                  key={n}
+                  onClick={() => setAiCount(n)}
+                  className={cn(
+                    'flex-1 rounded-xl py-2.5 text-sm font-black transition-all',
+                    aiCount === n ? 'bg-[#FF6321] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                  )}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+          </div>
+          <button
+            onClick={handleAiGenerate}
+            disabled={aiGenerating}
+            className="w-full rounded-2xl bg-slate-900 dark:bg-white dark:text-black py-4 font-black text-white active:scale-95 disabled:opacity-50 disabled:cursor-wait transition-all"
+          >
+            {aiGenerating ? 'Generating…' : `Generate ${aiCount} Drills`}
+          </button>
+        </div>
       </Modal>
 
       {/* Backup & Restore modal */}
