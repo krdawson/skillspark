@@ -80,24 +80,24 @@ export default function SelectionView({ profiles, goals, adminPin, calculateStre
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="min-h-screen flex flex-col"
+        className="min-h-screen flex flex-col bg-[#0d1929]"
       >
-        {/* ── Compact header ── */}
-        <div className="bg-[#0d1929] px-5 py-3 flex items-center">
+        {/* Logo floats in upper-left — background matches so no visible edge */}
+        <div className="px-5 pt-6 pb-2">
           <motion.img
             src="/logo.jpg"
             alt="SkillSpark"
             initial={{ opacity: 0, x: -8 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 }}
-            className="h-12 w-auto rounded-lg object-cover"
+            className="h-24 w-auto"
           />
         </div>
 
         {/* ── Profiles panel ── */}
         <div className="flex-1">
-          <div className="max-w-lg mx-auto px-5 py-8 space-y-4">
-            <p className="text-[#9E9E9E] dark:text-slate-500 font-medium">
+          <div className="max-w-lg mx-auto px-5 pb-8 space-y-4">
+            <p className="text-slate-400 font-medium text-sm">
               Who is practicing today?
             </p>
 
@@ -114,20 +114,20 @@ export default function SelectionView({ profiles, goals, adminPin, calculateStre
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.05 * i }}
                     onClick={() => handleProfileClick(p)}
-                    className="flex w-full items-center justify-between rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm transition-all hover:scale-[1.02] hover:shadow-md active:scale-[0.98]"
+                    className="flex w-full items-center justify-between rounded-2xl bg-[#162236] p-5 transition-all hover:bg-[#1d2e47] hover:scale-[1.02] active:scale-[0.98]"
                   >
                     <div className="flex flex-1 items-center gap-4">
                       <div className={cn(
                         'flex h-11 w-11 items-center justify-center rounded-xl text-white shrink-0 font-black text-lg',
-                        p.role === 'admin' ? 'bg-slate-800 dark:bg-slate-700' : 'bg-blue-500'
+                        p.role === 'admin' ? 'bg-slate-600' : 'bg-blue-500'
                       )}>
                         {p.role === 'admin' ? <Settings size={20} /> : p.name.charAt(0)}
                       </div>
                       <div className="text-left flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <p className="font-black text-base leading-tight dark:text-slate-100 truncate">{p.name}</p>
+                          <p className="font-black text-base leading-tight text-white truncate">{p.name}</p>
                           {p.role === 'kid' && (
-                            <span className="shrink-0 rounded-md bg-yellow-100 dark:bg-yellow-950/30 px-1.5 py-0.5 text-[10px] font-black text-yellow-700 dark:text-yellow-500 uppercase">
+                            <span className="shrink-0 rounded-md bg-yellow-400/20 px-1.5 py-0.5 text-[10px] font-black text-yellow-400 uppercase">
                               LVL {level}
                             </span>
                           )}
@@ -145,8 +145,8 @@ export default function SelectionView({ profiles, goals, adminPin, calculateStre
                               const pct = Math.min(100, (goal.currentValue / maxTarget) * 100);
                               return (
                                 <div className="flex items-center gap-1.5 flex-1">
-                                  <div className="h-1.5 flex-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden max-w-[72px]">
-                                    <div className="h-full bg-blue-500 rounded-full" style={{ width: `${pct}%` }} />
+                                  <div className="h-1.5 flex-1 bg-slate-700 rounded-full overflow-hidden max-w-[72px]">
+                                    <div className="h-full bg-blue-400 rounded-full" style={{ width: `${pct}%` }} />
                                   </div>
                                   <span className="text-[10px] font-bold text-slate-400">{Math.round(pct)}%</span>
                                 </div>
@@ -155,11 +155,11 @@ export default function SelectionView({ profiles, goals, adminPin, calculateStre
                           </div>
                         )}
                         {p.role === 'admin' && (
-                          <p className="text-[10px] text-slate-400 font-medium mt-0.5">Parent / Admin</p>
+                          <p className="text-[10px] text-slate-500 font-medium mt-0.5">Parent / Admin</p>
                         )}
                       </div>
                     </div>
-                    <ChevronRight size={18} className="text-slate-300 dark:text-slate-700 ml-3 shrink-0" />
+                    <ChevronRight size={18} className="text-slate-600 ml-3 shrink-0" />
                   </motion.button>
                 );
               })}
