@@ -1,22 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 
-const url  = import.meta.env.VITE_SUPABASE_URL  as string | undefined;
-const key  = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+// The anon key is a public key by design — safe to expose in frontend code.
+// Supabase's Row Level Security policies protect the data, not the key.
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://cbdjrxileqcbouealmuy.supabase.co';
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNiZGpyeGlsZXFjYm91ZWFsbXV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNzU3MjksImV4cCI6MjA5NDg1MTcyOX0.kV996a4Demf5m_QHFR_vXbpCqddZyMV7cVdtJTJaVvo';
 
-if (!url || !key) {
-  console.error(
-    '[SkillSpark] Missing Supabase env vars. ' +
-    'VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY must be set in Vercel → ' +
-    'Settings → Environment Variables (Production environment).'
-  );
-}
+export const FAMILY_ID: string = import.meta.env.VITE_FAMILY_ID || '66b6d6ab-b010-407f-921e-3aa8b43df317';
 
-export const supabase = createClient(
-  url  ?? 'https://placeholder.supabase.co',
-  key  ?? 'placeholder',
-);
-
-export const FAMILY_ID: string = (import.meta.env.VITE_FAMILY_ID as string | undefined) ?? '';
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ── Row → App type mappers ──────────────────────────────────────────────────
 
