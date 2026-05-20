@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { Flame, CheckCircle2, Circle, Trophy } from 'lucide-react';
+import { Flame, CheckCircle2, Circle } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 import { Profile, Goal, DailyLog } from '../types';
 import { cn } from '../lib/cn';
@@ -39,11 +39,6 @@ export default function KidProgressCard({ profile, goals, history, allProfiles, 
   const todayDone = todayCount >= profile.drillsPerDay;
   const todayStarted = todayCount > 0;
 
-  // Find next unachieved milestone across all personal goals
-  const personalGoals = goals.filter(g => g.profileId === profile.id);
-  const nextMilestone = personalGoals
-    .flatMap(g => g.milestones.filter(m => !m.isAchieved).map(m => ({ goal: g, milestone: m })))
-    .sort((a, b) => (a.milestone.target - a.goal.currentValue) - (b.milestone.target - b.goal.currentValue))[0];
 
   return (
     <motion.div
@@ -178,33 +173,6 @@ export default function KidProgressCard({ profile, goals, history, allProfiles, 
         </div>
       </div>
 
-      {/* Next milestone */}
-      {nextMilestone ? (
-        <div className="rounded-xl bg-slate-50 dark:bg-slate-800 p-3">
-          <div className="flex items-center gap-2 mb-2">
-            <Trophy size={12} className="text-[#FF6321]" />
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Next Reward</p>
-          </div>
-          <p className="text-sm font-black text-slate-700 dark:text-slate-200 mb-2">{nextMilestone.milestone.reward}</p>
-          <div className="flex items-center gap-2">
-            <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${Math.min(100, (nextMilestone.goal.currentValue / nextMilestone.milestone.target) * 100)}%` }}
-                transition={{ duration: 0.8, ease: 'easeOut' }}
-                className="h-full bg-[#FF6321] rounded-full"
-              />
-            </div>
-            <span className="text-[10px] font-black text-slate-400 whitespace-nowrap">
-              {nextMilestone.goal.currentValue}/{nextMilestone.milestone.target}
-            </span>
-          </div>
-        </div>
-      ) : (
-        <div className="rounded-xl bg-green-50 dark:bg-green-950/20 p-3 text-center">
-          <p className="text-xs font-black text-green-600 dark:text-green-400">All milestones complete! 🏆</p>
-        </div>
-      )}
     </motion.div>
   );
 }
