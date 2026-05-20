@@ -21,11 +21,19 @@ function seededShuffle<T>(arr: T[], seed: number): T[] {
 }
 
 export function getDailyDrills(drills: Drill[], profile: Profile, date: string): Drill[] {
-  const eligible = drills.filter(d =>
-    profile.sport === 'both' ||
-    d.sports.includes(profile.sport as 'soccer' | 'lacrosse' | 'both') ||
-    d.sports.includes('both')
+  // Pool 1: sport-specific drills matching this kid's sport
+  const sportDrills = drills.filter(d => {
+    if (d.type !== 'sport-specific') return false;
+    if (profile.sport === 'both') return true;
+    return d.sports.includes(profile.sport as 'soccer' | 'lacrosse');
+  });
+
+  // Pool 2: conditioning + strength apply to every kid regardless of sport
+  const conditioningDrills = drills.filter(d =>
+    d.type === 'conditioning' || d.type === 'strength'
   );
+
+  const eligible = [...sportDrills, ...conditioningDrills];
   const seed = stringToSeed(`${date}-${profile.id}`);
   return seededShuffle(eligible, seed).slice(0, profile.drillsPerDay);
 }

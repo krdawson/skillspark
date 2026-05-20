@@ -573,17 +573,25 @@ export default function AdminView({ profiles, drills, goals, history, theme, adm
                 placeholder="25 reps" />
             </div>
           </div>
-          <div className="space-y-1">
-            <label className="text-xs font-bold uppercase text-[#9E9E9E]">Sports</label>
-            <div className="flex flex-wrap gap-2">
-              {(['soccer', 'lacrosse', 'both'] as Sport[]).map(s => (
-                <button key={s} onClick={() => toggleDrillSport(s)}
-                  className={cn('rounded-lg px-4 py-2 text-xs font-bold uppercase transition-all', drillForm.sports?.includes(s) ? 'bg-[#FF6321] text-white' : 'bg-slate-100 dark:bg-slate-800 text-[#9E9E9E]')}>
-                  {s}
-                </button>
-              ))}
+          {/* Sport selector only shown for sport-specific drills — S&C applies to all kids */}
+          {drillForm.type === 'sport-specific' && (
+            <div className="space-y-1">
+              <label className="text-xs font-bold uppercase text-[#9E9E9E]">Sport</label>
+              <div className="flex flex-wrap gap-2">
+                {(['soccer', 'lacrosse', 'both'] as Sport[]).map(s => (
+                  <button key={s} onClick={() => toggleDrillSport(s)}
+                    className={cn('rounded-lg px-4 py-2 text-xs font-bold uppercase transition-all', drillForm.sports?.includes(s) ? 'bg-[#FF6321] text-white' : 'bg-slate-100 dark:bg-slate-800 text-[#9E9E9E]')}>
+                    {s}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
+          {(drillForm.type === 'conditioning' || drillForm.type === 'strength') && (
+            <p className="text-xs text-slate-400 bg-slate-50 dark:bg-slate-800 rounded-xl px-3 py-2">
+              S&C drills are shown to all kids regardless of sport — no sport selection needed.
+            </p>
+          )}
           <button onClick={saveDrill} className="w-full rounded-2xl bg-black dark:bg-white dark:text-black py-4 font-black text-white active:scale-95 transition-transform">
             {drillForm.id ? 'Update Drill' : 'Save Drill'}
           </button>

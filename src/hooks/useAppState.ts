@@ -73,6 +73,54 @@ export function useAppState() {
     return () => clearTimeout(t);
   }, [notification]);
 
+  // Supabase Realtime — keep admin overview live when kids complete drills
+  useEffect(() => {
+    if (isLoading) return;
+
+    const channel = supabase
+      .channel('family-changes')
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'daily_logs',
+        filter: `family_id=eq.${FAMILY_ID}`,
+      }, payload => {
+        if (!payload.new) return;
+        const updated = toLog(payload.new);
+        setHistory(prev => {
+          const idx = prev.findIndex(l => l.id === updated.id);
+          if (idx > -1) { const next = [...prev]; next[idx] = updated; return next; }
+          return [...prev, updated];
+        });
+        // Keep dailyCompleted in sync for today
+        const today = format(new Date(), 'yyyy-MM-dd');
+        if (updated.date === today) {
+          setDailyCompleted(prev => {
+            const next = { ...prev };
+            updated.completedDrillIds.forEach(id => { next[`${updated.profileId}-${id}`] = true; });
+            return next;
+          });
+        }
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'profiles',
+        filter: `family_id=eq.${FAMILY_ID}`,
+      }, payload => {
+        if (!payload.new) return;
+        const updated = toProfile(payload.new);
+        setProfiles(prev => prev.map(p => p.id === updated.id ? updated : p));
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'goals',
+        filter: `family_id=eq.${FAMILY_ID}`,
+      }, payload => {
+        if (!payload.new) return;
+        const updated = toGoal(payload.new);
+        setGoals(prev => prev.map(g => g.id === updated.id ? updated : g));
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [isLoading]);
+
   // Sync streak goals whenever history changes
   useEffect(() => {
     if (isLoading) return;
