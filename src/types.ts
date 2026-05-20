@@ -8,9 +8,7 @@ export interface Profile {
   sport: Sport;
   drillsPerDay: number;
   pin?: string;
-  streak?: number;
   xp?: number;
-  level?: number;
   badges?: string[];
 }
 
@@ -46,7 +44,5 @@ export interface DailyLog {
   id: string;
   profileId: string;
   date: string;
-  drillIds: string[];
   completedDrillIds: string[];
-  isDone: boolean;
 }

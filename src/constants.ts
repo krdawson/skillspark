@@ -1,5 +1,20 @@
 import { Drill } from './types';
 
+export const PREDEFINED_REWARDS = [
+  'Ice Cream Trip',
+  'New Soccer Ball',
+  'New Cleats',
+  'Movie Night',
+  'Video Game Time',
+  'New Lacrosse Stick',
+  'Dinner of Choice',
+  'Stay Up Late (30 min)',
+  'New Practice Shirt',
+  'Water Bottle',
+  'Trip to the Park',
+  'Bowling Night',
+];
+
 export const INITIAL_DRILLS: Drill[] = [
   // SOCCER DRILLS (20)
   {

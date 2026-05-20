@@ -2,12 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronDown, Flame, Trash2, Edit3 } from 'lucide-react';
 import { Drill } from '../types';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+import { cn } from '../lib/cn';
 
 export default function AdminDrillCard({ drill, onDelete, onEdit }: { drill: Drill; onDelete?: (id: string) => void; onEdit?: (drill: Drill) => void; key?: string }) {
   const [isExpanded, setIsExpanded] = useState(false);
