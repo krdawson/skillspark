@@ -35,6 +35,7 @@ interface Props {
   notificationEnabled: boolean;
   updateNotificationSettings: (s: { time?: string; enabled?: boolean }) => void;
   subscribeToNotifications: (profileId: string) => Promise<boolean>;
+  onSignOut: () => Promise<void>;
   onBack: () => void;
 }
 
@@ -48,7 +49,7 @@ function newMilestone(): Milestone {
   return { id: Math.random().toString(36).substr(2, 9), target: 10, reward: '', isAchieved: false };
 }
 
-export default function AdminView({ profiles, drills, goals, history, theme, adminPin, toggleTheme, showNotification, addProfile, updateProfile, addDrill, updateDrill, deleteDrill, addGoal, updateGoal, deleteGoal, changeAdminPin, exportData, importData, notificationTime, notificationEnabled, updateNotificationSettings, subscribeToNotifications, onBack }: Props) {
+export default function AdminView({ profiles, drills, goals, history, theme, adminPin, toggleTheme, showNotification, addProfile, updateProfile, addDrill, updateDrill, deleteDrill, addGoal, updateGoal, deleteGoal, changeAdminPin, exportData, importData, notificationTime, notificationEnabled, updateNotificationSettings, subscribeToNotifications, onSignOut, onBack }: Props) {
   const [expandedCategories, setExpandedCategories] = useState<string[]>(['soccer', 'lacrosse']);
 
   // Drill modal
@@ -80,6 +81,21 @@ export default function AdminView({ profiles, drills, goals, history, theme, adm
   const [notifSubscribed, setNotifSubscribed] = useState(() =>
     'Notification' in window && Notification.permission === 'granted'
   );
+
+  // Device assignment — which kid profile is pinned to this device
+  const [deviceProfileId, setDeviceProfileId] = useState<string>(
+    () => localStorage.getItem('deviceProfileId') ?? ''
+  );
+
+  function assignDevice(profileId: string) {
+    setDeviceProfileId(profileId);
+    if (profileId) {
+      localStorage.setItem('deviceProfileId', profileId);
+    } else {
+      localStorage.removeItem('deviceProfileId');
+    }
+    showNotification(profileId ? 'Device assigned! Kids will skip straight to PIN.' : 'Device unassigned.');
+  }
 
   // AI drill generation
   const [aiModalOpen, setAiModalOpen] = useState(false);
@@ -246,10 +262,12 @@ export default function AdminView({ profiles, drills, goals, history, theme, adm
           <button onClick={() => setBackupModalOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-full bg-white dark:bg-slate-900 shadow-sm" title="Backup & Restore">
             <Download size={18} className="text-slate-500" />
           </button>
-          <button onClick={() => setPinModalOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-full bg-white dark:bg-slate-900 shadow-sm" title="Change PIN">
-            <Lock size={18} className="text-slate-500" />
+          <button
+            onClick={onSignOut}
+            className="flex items-center gap-2 rounded-full bg-slate-100 dark:bg-slate-800 px-4 py-2 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+          >
+            Sign Out
           </button>
-          <h2 className="text-2xl font-black dark:text-slate-100">Admin</h2>
         </div>
       </header>
 
@@ -465,6 +483,39 @@ export default function AdminView({ profiles, drills, goals, history, theme, adm
                   <p className="text-[10px] text-slate-400">Requires iOS 16.4+ with app added to Home Screen</p>
                 )}
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Device Assignment */}
+        <section className="space-y-4 lg:col-span-3">
+          <h3 className="text-lg font-bold dark:text-slate-100">This Device</h3>
+          <div className="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm">
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+              Assign a kid to this device so they skip the profile selection and go straight to their PIN entry.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => assignDevice('')}
+                className={cn(
+                  'rounded-xl px-4 py-2 text-sm font-black transition-all',
+                  !deviceProfileId ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200'
+                )}
+              >
+                Not assigned
+              </button>
+              {kidProfiles.map(p => (
+                <button
+                  key={p.id}
+                  onClick={() => assignDevice(p.id)}
+                  className={cn(
+                    'rounded-xl px-4 py-2 text-sm font-black transition-all',
+                    deviceProfileId === p.id ? 'bg-[#FF6321] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  )}
+                >
+                  {p.name}'s device
+                </button>
+              ))}
             </div>
           </div>
         </section>
