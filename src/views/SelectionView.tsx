@@ -82,22 +82,22 @@ export default function SelectionView({ profiles, goals, adminPin, calculateStre
         exit={{ opacity: 0 }}
         className="min-h-screen flex flex-col bg-[#0d1929]"
       >
-        {/* Logo floats in upper-left — background matches so no visible edge */}
-        <div className="px-5 pt-6 pb-2">
+        {/* Logo — centered */}
+        <div className="flex justify-center pt-10 pb-4">
           <motion.img
             src="/logo.jpg"
             alt="SkillSpark"
-            initial={{ opacity: 0, x: -8 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1 }}
-            className="h-24 w-auto"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.1, duration: 0.4 }}
+            className="h-44 w-auto"
           />
         </div>
 
         {/* ── Profiles panel ── */}
         <div className="flex-1">
           <div className="max-w-lg mx-auto px-5 pb-8 space-y-4">
-            <p className="text-slate-400 font-medium text-sm">
+            <p className="text-slate-400 font-medium text-sm text-center">
               Who is practicing today?
             </p>
 
