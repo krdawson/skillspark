@@ -50,7 +50,7 @@ function newMilestone(): Milestone {
 }
 
 export default function AdminView({ profiles, drills, goals, history, theme, adminPin, toggleTheme, showNotification, addProfile, updateProfile, addDrill, updateDrill, deleteDrill, addGoal, updateGoal, deleteGoal, changeAdminPin, exportData, importData, notificationTime, notificationEnabled, updateNotificationSettings, subscribeToNotifications, onSignOut, onBack }: Props) {
-  const [expandedCategories, setExpandedCategories] = useState<string[]>(['soccer', 'lacrosse']);
+  const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
 
   // Drill modal
   const [drillModalOpen, setDrillModalOpen] = useState(false);
