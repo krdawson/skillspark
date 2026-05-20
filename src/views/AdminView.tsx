@@ -31,6 +31,10 @@ interface Props {
   changeAdminPin: (pin: string) => void;
   exportData: () => void;
   importData: (json: string) => boolean;
+  notificationTime: string;
+  notificationEnabled: boolean;
+  updateNotificationSettings: (s: { time?: string; enabled?: boolean }) => void;
+  subscribeToNotifications: (profileId: string) => Promise<boolean>;
   onBack: () => void;
 }
 
@@ -44,7 +48,7 @@ function newMilestone(): Milestone {
   return { id: Math.random().toString(36).substr(2, 9), target: 10, reward: '', isAchieved: false };
 }
 
-export default function AdminView({ profiles, drills, goals, history, theme, adminPin, toggleTheme, showNotification, addProfile, updateProfile, addDrill, updateDrill, deleteDrill, addGoal, updateGoal, deleteGoal, changeAdminPin, exportData, importData, onBack }: Props) {
+export default function AdminView({ profiles, drills, goals, history, theme, adminPin, toggleTheme, showNotification, addProfile, updateProfile, addDrill, updateDrill, deleteDrill, addGoal, updateGoal, deleteGoal, changeAdminPin, exportData, importData, notificationTime, notificationEnabled, updateNotificationSettings, subscribeToNotifications, onBack }: Props) {
   const [expandedCategories, setExpandedCategories] = useState<string[]>(['soccer', 'lacrosse']);
 
   // Drill modal
@@ -71,6 +75,11 @@ export default function AdminView({ profiles, drills, goals, history, theme, adm
   // Backup modal
   const [backupModalOpen, setBackupModalOpen] = useState(false);
   const [restoring, setRestoring] = useState(false);
+
+  // Notification settings
+  const [notifSubscribed, setNotifSubscribed] = useState(() =>
+    'Notification' in window && Notification.permission === 'granted'
+  );
 
   // AI drill generation
   const [aiModalOpen, setAiModalOpen] = useState(false);
@@ -388,6 +397,75 @@ export default function AdminView({ profiles, drills, goals, history, theme, adm
                 </div>
               );
             })}
+          </div>
+        </section>
+
+        {/* Notifications */}
+        <section className="space-y-4 lg:col-span-3">
+          <h3 className="text-lg font-bold dark:text-slate-100">Notifications</h3>
+          <div className="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+              {/* Toggle */}
+              <div className="flex items-center justify-between gap-4 flex-1">
+                <div>
+                  <p className="font-bold dark:text-slate-100">Daily drill reminders</p>
+                  <p className="text-xs text-slate-400">Kids get notified at the time below</p>
+                </div>
+                <button
+                  onClick={() => updateNotificationSettings({ enabled: !notificationEnabled })}
+                  className={cn(
+                    'relative inline-flex h-6 w-11 shrink-0 rounded-full transition-colors duration-200',
+                    notificationEnabled ? 'bg-[#FF6321]' : 'bg-slate-200 dark:bg-slate-700'
+                  )}
+                >
+                  <span className={cn(
+                    'inline-block h-5 w-5 rounded-full bg-white shadow translate-y-0.5 transition-transform duration-200',
+                    notificationEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                  )} />
+                </button>
+              </div>
+
+              {/* Time picker */}
+              <div className="flex items-center gap-3">
+                <div>
+                  <p className="text-xs font-bold uppercase text-[#9E9E9E] mb-1">Reminder time (CT)</p>
+                  <input
+                    type="time"
+                    value={notificationTime}
+                    onChange={e => updateNotificationSettings({ time: e.target.value })}
+                    disabled={!notificationEnabled}
+                    className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm font-bold outline-none focus:border-[#FF6321] disabled:opacity-40"
+                  />
+                </div>
+              </div>
+
+              {/* Subscribe this device */}
+              <div className="flex flex-col gap-1">
+                <p className="text-xs font-bold uppercase text-[#9E9E9E]">This device</p>
+                {notifSubscribed ? (
+                  <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                    <span className="text-lg">✓</span>
+                    <span className="text-sm font-bold">Notifications on</span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={async () => {
+                      const adminProfile = profiles.find(p => p.role === 'admin');
+                      if (!adminProfile) return;
+                      const ok = await subscribeToNotifications(adminProfile.id);
+                      if (ok) { setNotifSubscribed(true); showNotification('Notifications enabled! 🔔'); }
+                      else showNotification('Could not enable — check browser settings.', true);
+                    }}
+                    className="rounded-xl bg-slate-800 dark:bg-slate-700 px-4 py-2 text-xs font-black text-white active:scale-95"
+                  >
+                    🔔 Enable on this device
+                  </button>
+                )}
+                {!notifSubscribed && (
+                  <p className="text-[10px] text-slate-400">Requires iOS 16.4+ with app added to Home Screen</p>
+                )}
+              </div>
+            </div>
           </div>
         </section>
 

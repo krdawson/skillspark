@@ -68,6 +68,7 @@ export default function App() {
             history={state.history}
             calculateStreak={state.calculateStreak}
             toggleDrill={state.toggleDrill}
+            subscribeToNotifications={state.subscribeToNotifications}
             onBack={handleBack}
           />
         )}
@@ -93,6 +94,10 @@ export default function App() {
             changeAdminPin={state.changeAdminPin}
             exportData={state.exportData}
             importData={state.importData}
+            notificationTime={state.notificationTime}
+            notificationEnabled={state.notificationEnabled}
+            updateNotificationSettings={state.updateNotificationSettings}
+            subscribeToNotifications={state.subscribeToNotifications}
             onBack={handleBack}
           />
         )}

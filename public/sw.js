@@ -48,3 +48,27 @@ self.addEventListener('fetch', e => {
     })
   );
 });
+
+// ── Push notifications ─────────────────────────────────────────────────────
+
+self.addEventListener('push', e => {
+  const data = e.data?.json() ?? {};
+  e.waitUntil(
+    self.registration.showNotification(data.title ?? 'SkillSpark', {
+      body: data.body ?? '',
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      data: { url: data.url ?? '/' },
+    })
+  );
+});
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windows => {
+      if (windows.length > 0) return windows[0].focus();
+      return clients.openWindow(e.notification.data?.url ?? '/');
+    })
+  );
+});

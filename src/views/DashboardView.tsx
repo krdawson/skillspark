@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, Flame, Trophy, Medal, CheckCircle2, Timer } from 'lucide-react';
 import { format } from 'date-fns';
@@ -18,11 +18,30 @@ interface Props {
   history: DailyLog[];
   calculateStreak: (profileId: string) => number;
   toggleDrill: (drillId: string, profile: Profile) => void;
+  subscribeToNotifications: (profileId: string) => Promise<boolean>;
   onBack: () => void;
 }
 
-export default function DashboardView({ activeProfile, drills, goals, dailyCompleted, history, calculateStreak, toggleDrill, onBack }: Props) {
+export default function DashboardView({ activeProfile, drills, goals, dailyCompleted, history, calculateStreak, toggleDrill, subscribeToNotifications, onBack }: Props) {
   const [tab, setTab] = useState<'today' | 'history'>('today');
+  const [notifGranted, setNotifGranted] = useState(() =>
+    'Notification' in window && Notification.permission === 'granted'
+  );
+  const [notifDismissed, setNotifDismissed] = useState(() =>
+    localStorage.getItem(`notif-dismissed-${activeProfile.id}`) === '1'
+  );
+
+  const showNotifBanner = !notifGranted && !notifDismissed && 'Notification' in window;
+
+  async function handleEnableNotifications() {
+    const ok = await subscribeToNotifications(activeProfile.id);
+    if (ok) {
+      setNotifGranted(true);
+    } else {
+      setNotifDismissed(true);
+      localStorage.setItem(`notif-dismissed-${activeProfile.id}`, '1');
+    }
+  }
 
   const todaysDrills = getTodaysDrills(drills, activeProfile);
   const activeQuests = goals.filter(g => g.profileId === activeProfile.id || g.isTeam);
@@ -74,6 +93,34 @@ export default function DashboardView({ activeProfile, drills, goals, dailyCompl
 
       {tab === 'today' ? (
         <>
+          {/* Notification permission banner */}
+          {showNotifBanner && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-5 flex items-center justify-between rounded-2xl bg-blue-50 dark:bg-blue-950/30 px-4 py-3"
+            >
+              <div>
+                <p className="text-sm font-black text-blue-800 dark:text-blue-300">Get daily drill reminders</p>
+                <p className="text-xs text-blue-500 dark:text-blue-400">We'll remind you when it's time to practice</p>
+              </div>
+              <div className="flex items-center gap-2 ml-3 shrink-0">
+                <button
+                  onClick={handleEnableNotifications}
+                  className="rounded-xl bg-blue-500 px-3 py-1.5 text-xs font-black text-white active:scale-95"
+                >
+                  Enable
+                </button>
+                <button
+                  onClick={() => { setNotifDismissed(true); localStorage.setItem(`notif-dismissed-${activeProfile.id}`, '1'); }}
+                  className="text-blue-300 dark:text-blue-600 text-lg leading-none"
+                >
+                  ×
+                </button>
+              </div>
+            </motion.div>
+          )}
+
           {/* ── Drills first ── */}
           <section className="space-y-4 mb-8">
             <div className="flex items-center justify-between">

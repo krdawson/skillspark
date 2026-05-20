@@ -42,6 +42,12 @@ const DEFAULT_GOALS: Goal[] = [
   },
 ];
 
+function urlBase64ToUint8Array(base64: string): Uint8Array {
+  const padded = base64 + '='.repeat((4 - base64.length % 4) % 4);
+  const raw = atob(padded.replace(/-/g, '+').replace(/_/g, '/'));
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+
 // ── Hook ────────────────────────────────────────────────────────────────────
 
 export function useAppState() {
@@ -51,8 +57,10 @@ export function useAppState() {
   const [goals, setGoals]       = useState<Goal[]>([]);
   const [history, setHistory]   = useState<DailyLog[]>([]);
   const [dailyCompleted, setDailyCompleted] = useState<Record<string, boolean>>({});
-  const [adminPin, setAdminPinState] = useState('1234');
-  const [theme, setTheme]       = useState<'light' | 'dark'>('light');
+  const [adminPin, setAdminPinState]         = useState('1234');
+  const [theme, setTheme]                    = useState<'light' | 'dark'>('light');
+  const [notificationTime, setNotificationTime]       = useState('09:00');
+  const [notificationEnabled, setNotificationEnabled] = useState(true);
   const [notification, setNotification] = useState<{ msg: string; isError: boolean } | null>(null);
 
   // ── Boot: load from Supabase ──────────────────────────────────────────────
@@ -133,6 +141,8 @@ export function useAppState() {
       if (settingsRow) {
         setAdminPinState(settingsRow.admin_pin);
         setTheme(settingsRow.theme as 'light' | 'dark');
+        setNotificationTime(settingsRow.notification_time ?? '09:00');
+        setNotificationEnabled(settingsRow.notification_enabled ?? true);
       }
     } catch (err) {
       console.error('[useAppState] load failed:', err);
@@ -266,6 +276,22 @@ export function useAppState() {
 
     if (milestoneReached) { triggerConfetti(); showNotification('NEW MILESTONE REACHED! 🏆'); }
 
+    // Notify parent when kid completes all drills for the day
+    const wasComplete = existingLog ? existingLog.completedDrillIds.length >= profile.drillsPerDay : false;
+    const isNowComplete = isDone && newLog.completedDrillIds.length >= profile.drillsPerDay;
+    if (isNowComplete && !wasComplete) {
+      fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          familyId: FAMILY_ID,
+          targetAdmins: true,
+          title: 'SkillSpark ✅',
+          body: `${profile.name} finished all their drills today!`,
+        }),
+      }).catch(() => {});
+    }
+
     // ── Background Supabase writes ────────────────────────────────────────
     ;(async () => {
       try {
@@ -366,6 +392,42 @@ export function useAppState() {
 
   // ── Settings ──────────────────────────────────────────────────────────────
 
+  // ── Push notifications ────────────────────────────────────────────────────
+
+  async function subscribeToNotifications(profileId: string): Promise<boolean> {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') return false;
+
+      const reg = await navigator.serviceWorker.ready;
+      const existing = await reg.pushManager.getSubscription();
+      const sub = existing ?? await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(import.meta.env.VITE_VAPID_PUBLIC_KEY as string),
+      });
+
+      await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profileId, subscription: sub.toJSON(), familyId: FAMILY_ID }),
+      });
+      return true;
+    } catch (err) {
+      console.error('[subscribe]', err);
+      return false;
+    }
+  }
+
+  function updateNotificationSettings(settings: { time?: string; enabled?: boolean }) {
+    if (settings.time !== undefined)    setNotificationTime(settings.time);
+    if (settings.enabled !== undefined) setNotificationEnabled(settings.enabled);
+    supabase.from('settings').update({
+      ...(settings.time    !== undefined && { notification_time: settings.time }),
+      ...(settings.enabled !== undefined && { notification_enabled: settings.enabled }),
+    }).eq('family_id', FAMILY_ID).then();
+  }
+
   function changeAdminPin(newPin: string) {
     setAdminPinState(newPin);
     supabase.from('settings').update({ admin_pin: newPin }).eq('family_id', FAMILY_ID).then();
@@ -429,6 +491,7 @@ export function useAppState() {
     addProfile, updateProfile,
     addGoal, updateGoal, deleteGoal,
     changeAdminPin, exportData, importData,
+    notificationTime, notificationEnabled, subscribeToNotifications, updateNotificationSettings,
     calculateStreak: (profileId: string) => calculateStreak(profileId, history, profiles),
   };
 }
