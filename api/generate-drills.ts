@@ -1,89 +1,101 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { GoogleGenAI } from '@google/genai';
+import Anthropic from '@anthropic-ai/sdk';
+
+const client = new Anthropic();
+
+const SYSTEM_PROMPT = `You are an expert youth sports coach. Generate age-appropriate, encouraging, and effective solo practice drills for kids.
+
+Rules:
+- Every drill must be doable solo at home or at a field — no teammates required
+- Write descriptions in short, clear, encouraging language a kid can read
+- Include at least one fundamentals drill per session
+- Reps must be specific (e.g. "50 passes", "3 sets of 10", "5 minutes")
+- Return ONLY valid JSON — no markdown, no extra text`;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: 'GEMINI_API_KEY is not configured in environment variables' });
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return res.status(500).json({ error: 'ANTHROPIC_API_KEY is not configured' });
   }
 
   const { sport, name, drillsPerDay, recentDrills = [] } = req.body ?? {};
-
   if (!sport || !name || !drillsPerDay) {
     return res.status(400).json({ error: 'Missing required fields: sport, name, drillsPerDay' });
   }
 
-  const avoidClause = recentDrills.length > 0
-    ? `Avoid repeating these drills the kid just did: ${recentDrills.slice(0, 10).join(', ')}.`
+  const avoidClause = (recentDrills as string[]).length > 0
+    ? `Avoid repeating these recent drills: ${(recentDrills as string[]).slice(0, 10).join(', ')}.`
     : '';
 
-  const prompt = `You are a youth sports coach. Generate exactly ${drillsPerDay} practice drill(s) for a youth ${sport} player named ${name}.
+  const userMessage = `Generate exactly ${drillsPerDay} practice drill(s) for ${name}, a youth ${sport} player. ${avoidClause}`;
 
-${avoidClause}
-
-Rules:
-- Drills must be doable solo at home or at a field (no teammates needed)
-- Keep descriptions short and encouraging, written for a kid
-- Mix skill types: include at least one drill focused on fundamentals
-- Reps should be specific (e.g. "50 passes", "3 sets of 10", "5 minutes")
-
-Return ONLY a valid JSON array, no markdown, no extra text. Each item must have exactly these fields:
-{
-  "title": "short action-oriented name",
-  "description": "1-2 sentences explaining the drill to a kid",
-  "reps": "specific reps/sets/duration",
-  "type": "sport-specific" | "conditioning" | "strength"
-}`;
-
-  const MODELS = ['gemini-2.0-flash', 'gemini-2.0-flash-lite'];
-
-  const ai = new GoogleGenAI({ apiKey });
-
-  let lastError: any;
-
-  for (const model of MODELS) {
-    try {
-      console.log(`[generate-drills] trying model: ${model}`);
-
-      const result = await ai.models.generateContent({
-        model,
-        contents: prompt,
-        config: {
-          responseMimeType: 'application/json',
-          temperature: 0.8,
+  try {
+    const response = await client.messages.create({
+      model: 'claude-haiku-4-5',
+      max_tokens: 1024,
+      system: SYSTEM_PROMPT,
+      output_config: {
+        format: {
+          type: 'json_schema',
+          name: 'drills',
+          schema: {
+            type: 'object',
+            properties: {
+              drills: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    title:       { type: 'string' },
+                    description: { type: 'string' },
+                    reps:        { type: 'string' },
+                    type:        { type: 'string', enum: ['sport-specific', 'conditioning', 'strength'] },
+                  },
+                  required: ['title', 'description', 'reps', 'type'],
+                  additionalProperties: false,
+                },
+              },
+            },
+            required: ['drills'],
+            additionalProperties: false,
+          },
         },
-      });
+      },
+      messages: [{ role: 'user', content: userMessage }],
+    });
 
-      const text = result.text();
-      const parsed = JSON.parse(text);
+    const text = response.content[0].type === 'text' ? response.content[0].text : '';
+    const parsed = JSON.parse(text) as { drills: any[] };
 
-      if (!Array.isArray(parsed) || parsed.length === 0) {
-        throw new Error('Model returned unexpected format');
-      }
+    console.log(`[generate-drills] ok — ${response.usage.input_tokens}in / ${response.usage.output_tokens}out tokens`);
 
-      const drills = parsed.slice(0, drillsPerDay).map((d: any) => ({
-        title:       String(d.title       ?? 'Practice Drill'),
-        description: String(d.description ?? ''),
-        reps:        String(d.reps        ?? ''),
-        type:        ['sport-specific', 'conditioning', 'strength'].includes(d.type) ? d.type : 'sport-specific',
-      }));
+    const drills = parsed.drills.slice(0, drillsPerDay).map((d: any) => ({
+      title:       String(d.title       ?? 'Practice Drill'),
+      description: String(d.description ?? ''),
+      reps:        String(d.reps        ?? ''),
+      type:        ['sport-specific', 'conditioning', 'strength'].includes(d.type) ? d.type : 'sport-specific',
+    }));
 
-      console.log(`[generate-drills] success with ${model}, returned ${drills.length} drills`);
-      return res.status(200).json({ drills });
+    return res.status(200).json({ drills });
 
-    } catch (err: any) {
-      lastError = err;
-      console.error(`[generate-drills] ${model} failed — code: ${err?.error?.code ?? err?.code ?? 'unknown'}, message: ${err?.message ?? JSON.stringify(err)}`);
-      // Bail immediately on auth errors; retry on quota/server errors
-      const code = err?.status ?? err?.httpStatus ?? err?.error?.code ?? err?.code;
-      if (code === 400 || code === 403) break;
+  } catch (err) {
+    if (err instanceof Anthropic.RateLimitError) {
+      console.error('[generate-drills] rate limited');
+      return res.status(429).json({ error: 'Rate limit hit — try again in a moment.' });
     }
+    if (err instanceof Anthropic.AuthenticationError) {
+      console.error('[generate-drills] bad API key');
+      return res.status(500).json({ error: 'Invalid API key — check ANTHROPIC_API_KEY in Vercel.' });
+    }
+    if (err instanceof Anthropic.APIError) {
+      console.error(`[generate-drills] API error ${err.status}:`, err.message);
+      return res.status(500).json({ error: err.message });
+    }
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[generate-drills] unexpected error:', msg);
+    return res.status(500).json({ error: msg });
   }
-
-  const message = lastError?.message ?? 'Failed to generate drills';
-  return res.status(500).json({ error: message });
 }
