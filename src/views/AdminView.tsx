@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Moon, Sun, Plus, Users, Trophy, Medal, Dumbbell, ChevronDown, RotateCcw, Lock, Timer } from 'lucide-react';
+import { ArrowLeft, Moon, Sun, Plus, Users, Trophy, Medal, Dumbbell, ChevronDown, RotateCcw, Lock, Download, Upload } from 'lucide-react';
 import { format } from 'date-fns';
 import { Profile, Drill, Goal, DailyLog, Sport, DrillType, GoalType, Milestone } from '../types';
 import { cn } from '../lib/cn';
@@ -28,6 +28,8 @@ interface Props {
   updateGoal: (goal: Goal) => void;
   deleteGoal: (id: string) => void;
   changeAdminPin: (pin: string) => void;
+  exportData: () => void;
+  importData: (json: string) => boolean;
   onBack: () => void;
 }
 
@@ -41,7 +43,7 @@ function newMilestone(): Milestone {
   return { id: Math.random().toString(36).substr(2, 9), target: 10, reward: '', isAchieved: false };
 }
 
-export default function AdminView({ profiles, drills, goals, history, theme, adminPin, toggleTheme, showNotification, addProfile, updateProfile, addDrill, updateDrill, deleteDrill, addGoal, updateGoal, deleteGoal, changeAdminPin, onBack }: Props) {
+export default function AdminView({ profiles, drills, goals, history, theme, adminPin, toggleTheme, showNotification, addProfile, updateProfile, addDrill, updateDrill, deleteDrill, addGoal, updateGoal, deleteGoal, changeAdminPin, exportData, importData, onBack }: Props) {
   const [expandedCategories, setExpandedCategories] = useState<string[]>(['soccer', 'lacrosse']);
 
   // Drill modal
@@ -64,6 +66,10 @@ export default function AdminView({ profiles, drills, goals, history, theme, adm
   const [pinModalOpen, setPinModalOpen] = useState(false);
   const [newPin, setNewPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
+
+  // Backup modal
+  const [backupModalOpen, setBackupModalOpen] = useState(false);
+  const [restoring, setRestoring] = useState(false);
 
   const kidProfiles = profiles.filter(p => p.role === 'kid');
   const todayStr = format(new Date(), 'yyyy-MM-dd');
@@ -142,6 +148,19 @@ export default function AdminView({ profiles, drills, goals, history, theme, adm
     setEditingGoal(null);
   }
 
+  function handleRestore(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const ok = importData(ev.target?.result as string);
+      if (ok) setBackupModalOpen(false);
+      setRestoring(false);
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  }
+
   function handleChangePin() {
     if (newPin.length !== 4) { showNotification('PIN must be 4 digits.'); return; }
     if (newPin !== confirmPin) { showNotification('PINs do not match.'); return; }
@@ -170,6 +189,9 @@ export default function AdminView({ profiles, drills, goals, history, theme, adm
         <div className="flex items-center gap-3">
           <button onClick={toggleTheme} className="flex h-10 w-10 items-center justify-center rounded-full bg-white dark:bg-slate-900 shadow-sm">
             {theme === 'light' ? <Moon size={20} className="text-slate-600" /> : <Sun size={20} className="text-yellow-400" />}
+          </button>
+          <button onClick={() => setBackupModalOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-full bg-white dark:bg-slate-900 shadow-sm" title="Backup & Restore">
+            <Download size={18} className="text-slate-500" />
           </button>
           <button onClick={() => setPinModalOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-full bg-white dark:bg-slate-900 shadow-sm" title="Change PIN">
             <Lock size={18} className="text-slate-500" />
@@ -537,6 +559,43 @@ export default function AdminView({ profiles, drills, goals, history, theme, adm
             </button>
           </div>
         )}
+      </Modal>
+
+      {/* Backup & Restore modal */}
+      <Modal isOpen={backupModalOpen} onClose={() => setBackupModalOpen(false)} title="Backup & Restore">
+        <div className="space-y-4">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Export a backup of all profiles, drills, goals, and history. Import it on any device to restore.
+          </p>
+          <button
+            onClick={exportData}
+            className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#FF6321] py-4 font-black text-white active:scale-95 transition-transform shadow-lg"
+          >
+            <Download size={18} />
+            Download Backup
+          </button>
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100 dark:border-slate-800" /></div>
+            <div className="relative flex justify-center"><span className="bg-white dark:bg-slate-900 px-3 text-xs font-bold text-slate-400 uppercase">or restore</span></div>
+          </div>
+          <label className={cn(
+            'flex w-full cursor-pointer items-center justify-center gap-3 rounded-2xl border-2 border-dashed py-4 font-black transition-all',
+            restoring
+              ? 'border-slate-200 dark:border-slate-800 text-slate-300 cursor-wait'
+              : 'border-slate-200 dark:border-slate-700 text-slate-500 hover:border-[#FF6321] hover:text-[#FF6321]'
+          )}>
+            <Upload size={18} />
+            {restoring ? 'Restoring…' : 'Choose Backup File'}
+            <input
+              type="file" accept=".json" className="hidden"
+              disabled={restoring}
+              onChange={e => { setRestoring(true); handleRestore(e); }}
+            />
+          </label>
+          <p className="text-center text-[10px] text-slate-400 dark:text-slate-600 font-medium">
+            Restoring will replace all current data
+          </p>
+        </div>
       </Modal>
 
       {/* Change PIN modal */}

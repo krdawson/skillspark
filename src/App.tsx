@@ -77,6 +77,8 @@ export default function App() {
             updateGoal={state.updateGoal}
             deleteGoal={state.deleteGoal}
             changeAdminPin={state.changeAdminPin}
+            exportData={state.exportData}
+            importData={state.importData}
             onBack={handleBack}
           />
         )}

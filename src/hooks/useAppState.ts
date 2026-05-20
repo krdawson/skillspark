@@ -307,13 +307,50 @@ export function useAppState() {
     showNotification('PIN updated! 🔒');
   }
 
+  function exportData() {
+    const payload = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      profiles,
+      drills,
+      goals,
+      dailyCompleted,
+      history,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `skillspark-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showNotification('Backup downloaded! 💾');
+  }
+
+  function importData(jsonString: string) {
+    try {
+      const data = JSON.parse(jsonString);
+      if (!data.version || !data.profiles) throw new Error('Invalid backup file');
+      if (data.profiles)       setProfiles(data.profiles);
+      if (data.drills)         setDrills(data.drills);
+      if (data.goals)          setGoals(data.goals);
+      if (data.dailyCompleted) setDailyCompleted(data.dailyCompleted);
+      if (data.history)        setHistory(data.history);
+      showNotification('Data restored! ✅ Refresh to see everything.');
+      return true;
+    } catch {
+      showNotification('Invalid backup file — restore failed.');
+      return false;
+    }
+  }
+
   return {
     theme, profiles, drills, goals, dailyCompleted, history, adminPin, notification,
     toggleTheme, showNotification, triggerConfetti,
     toggleDrill, addDrill, updateDrill, deleteDrill,
     addProfile, updateProfile,
     addGoal, updateGoal, deleteGoal,
-    changeAdminPin,
+    changeAdminPin, exportData, importData,
     calculateStreak: (profileId: string) => calculateStreak(profileId, history, profiles),
   };
 }
