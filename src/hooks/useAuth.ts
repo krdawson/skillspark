@@ -23,10 +23,7 @@ export function useAuth() {
   }, []);
 
   async function signInWithGoogle() {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin },
-    });
+    await supabase.auth.signInWithOAuth({ provider: 'google' });
   }
 
   async function signOut() {
