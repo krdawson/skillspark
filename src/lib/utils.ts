@@ -16,25 +16,28 @@ export function calculateStreak(profileId: string, history: DailyLog[], profiles
   const profile = profiles.find(p => p.id === profileId);
   if (!profile) return 0;
 
-  const logs = history
-    .filter(h => h.profileId === profileId)
-    .sort((a, b) => b.date.localeCompare(a.date));
-
-  if (logs.length === 0) return 0;
-
   const today = format(new Date(), 'yyyy-MM-dd');
-  const yesterday = format(new Date(Date.now() - 86400000), 'yyyy-MM-dd');
+  const restDays = new Set(profile.restDays ?? []);
 
-  if (logs[0].date !== today && logs[0].date !== yesterday) return 0;
+  // Days where the drill goal was met
+  const completedDays = new Set(
+    history
+      .filter(h => h.profileId === profileId && h.completedDrillIds.length >= profile.drillsPerDay)
+      .map(h => h.date)
+  );
+
+  const isActive = (date: string) => completedDays.has(date) || restDays.has(date);
+
+  // Start from today; if today isn't active yet, try yesterday (in-progress day)
+  const yesterday = format(new Date(Date.now() - 86400000), 'yyyy-MM-dd');
+  const startDate = isActive(today) ? today : yesterday;
+  if (!isActive(startDate)) return 0;
 
   let streak = 0;
-  for (let i = 0; i < logs.length; i++) {
-    if (logs[i].completedDrillIds.length >= profile.drillsPerDay) {
-      streak++;
-    } else {
-      if (i === 0 && logs[i].date === today) continue;
-      break;
-    }
+  let d = new Date(startDate + 'T12:00:00');
+  while (isActive(format(d, 'yyyy-MM-dd'))) {
+    streak++;
+    d = new Date(d.getTime() - 86400000);
   }
   return streak;
 }

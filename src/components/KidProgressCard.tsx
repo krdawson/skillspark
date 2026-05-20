@@ -1,5 +1,6 @@
 import { motion } from 'motion/react';
 import { Flame, CheckCircle2, Circle } from 'lucide-react';
+import { getProfileColor } from '../lib/profileColors';
 import { format, subDays } from 'date-fns';
 import { Profile, Goal, DailyLog } from '../types';
 import { cn } from '../lib/cn';
@@ -33,6 +34,8 @@ export default function KidProgressCard({ profile, goals, history, allProfiles, 
 
   const { level, currentXP, xpToNext } = calculateLevelData(profile.xp || 0);
   const streak = calculateStreak(profile.id, history, allProfiles);
+  const profileColor = getProfileColor(profile.color);
+  const restDays = new Set(profile.restDays ?? []);
 
   const todayLog = history.find(h => h.profileId === profile.id && h.date === today);
   const todayCount = todayLog?.completedDrillIds.length ?? 0;
@@ -49,7 +52,7 @@ export default function KidProgressCard({ profile, goals, history, allProfiles, 
       {/* Header */}
       <div className="flex items-start justify-between mb-5">
         <div className="flex items-center gap-3">
-          <div className="h-12 w-12 rounded-2xl bg-blue-500 flex items-center justify-center text-white text-lg font-black">
+          <div style={{ backgroundColor: profileColor }} className="h-12 w-12 rounded-2xl flex items-center justify-center text-white text-lg font-black">
             {profile.name.charAt(0)}
           </div>
           <div>
@@ -113,6 +116,7 @@ export default function KidProgressCard({ profile, goals, history, allProfiles, 
             const count = log?.completedDrillIds.length ?? 0;
             const full = count >= profile.drillsPerDay;
             const partial = count > 0 && !full;
+            const isRestDay = restDays.has(day);
             const isToday = day === today;
 
             return (
@@ -120,6 +124,7 @@ export default function KidProgressCard({ profile, goals, history, allProfiles, 
                 <div className={cn(
                   'w-full aspect-square rounded-lg transition-all',
                   full ? 'bg-green-400 dark:bg-green-500' :
+                  isRestDay ? 'bg-purple-300 dark:bg-purple-700' :
                   partial ? 'bg-yellow-300 dark:bg-yellow-500' :
                   'bg-slate-100 dark:bg-slate-800'
                 )} />
@@ -133,7 +138,7 @@ export default function KidProgressCard({ profile, goals, history, allProfiles, 
             );
           })}
         </div>
-        <div className="flex items-center gap-3 mt-2">
+        <div className="flex items-center gap-3 mt-2 flex-wrap">
           <div className="flex items-center gap-1">
             <div className="h-2 w-2 rounded-sm bg-green-400" />
             <span className="text-[9px] text-slate-400 font-bold">Done</span>
@@ -141,6 +146,10 @@ export default function KidProgressCard({ profile, goals, history, allProfiles, 
           <div className="flex items-center gap-1">
             <div className="h-2 w-2 rounded-sm bg-yellow-300" />
             <span className="text-[9px] text-slate-400 font-bold">Partial</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="h-2 w-2 rounded-sm bg-purple-300" />
+            <span className="text-[9px] text-slate-400 font-bold">Rest</span>
           </div>
           <div className="flex items-center gap-1">
             <div className="h-2 w-2 rounded-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />

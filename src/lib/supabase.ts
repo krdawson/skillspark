@@ -15,6 +15,8 @@ export const toProfile = (r: any) => ({
   id: r.id, name: r.name, role: r.role, sport: r.sport,
   drillsPerDay: r.drills_per_day,
   pin: r.pin ?? undefined, xp: r.xp ?? 0, badges: r.badges ?? [],
+  color: r.color ?? 'blue',
+  restDays: r.rest_days ?? [],
 });
 
 export const toDrill = (r: any) => ({
@@ -39,6 +41,8 @@ export const fromProfile = (p: any) => ({
   id: p.id, family_id: FAMILY_ID, name: p.name, role: p.role,
   sport: p.sport, drills_per_day: p.drillsPerDay,
   pin: p.pin ?? null, xp: p.xp ?? 0, badges: p.badges ?? [],
+  color: p.color ?? 'blue',
+  rest_days: p.restDays ?? [],
 });
 
 export const fromDrill = (d: any) => ({

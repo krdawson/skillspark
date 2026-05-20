@@ -10,6 +10,8 @@ export interface Profile {
   pin?: string;
   xp?: number;
   badges?: string[];
+  color?: string;
+  restDays?: string[];
 }
 
 export interface Drill {

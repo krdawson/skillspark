@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Moon, Sun, Plus, Users, Trophy, Medal, Dumbbell, ChevronDown, RotateCcw, Download, Upload } from 'lucide-react';
+import { PROFILE_COLORS, getProfileColor } from '../lib/profileColors';
 import { format } from 'date-fns';
 import { Profile, Drill, Goal, DailyLog, Sport, DrillType, GoalType, Milestone } from '../types';
 import { cn } from '../lib/cn';
@@ -295,8 +296,28 @@ export default function AdminView({ profiles, drills, goals, history, theme, adm
                   onEdit={() => { setEditingProfile(p); setEditProfileOpen(true); }}
                 />
 
+                {/* Rest day controls */}
+                <div className="flex items-center justify-between px-1 mt-3 mb-1">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-600">Quests</p>
+                  {!(p.restDays ?? []).includes(todayStr) ? (
+                    <button
+                      onClick={() => updateProfile({ ...p, restDays: [...(p.restDays ?? []), todayStr] })}
+                      className="text-[10px] font-bold text-slate-400 hover:text-purple-500 transition-colors"
+                    >
+                      🛌 Grant rest day
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => updateProfile({ ...p, restDays: (p.restDays ?? []).filter(d => d !== todayStr) })}
+                      className="text-[10px] font-bold text-purple-500 hover:text-red-400 transition-colors"
+                    >
+                      🛌 Rest day granted · undo
+                    </button>
+                  )}
+                </div>
+
                 {/* Kid's quests inline */}
-                <div className="mt-3 space-y-3 pl-1">
+                <div className="space-y-3 pl-1">
                   {kidGoals.map(g => {
                     const sorted = [...g.milestones].sort((a, b) => a.target - b.target);
                     const maxTarget = sorted.length > 0 ? sorted[sorted.length - 1].target : 1;
@@ -721,6 +742,23 @@ export default function AdminView({ profiles, drills, goals, history, theme, adm
                 <label className="text-xs font-bold uppercase text-[#9E9E9E]">Drills / Day</label>
                 <input type="number" value={editingProfile.drillsPerDay} onChange={e => setEditingProfile({ ...editingProfile, drillsPerDay: parseInt(e.target.value) || 1 })}
                   className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 dark:text-slate-100 p-3 outline-none" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold uppercase text-[#9E9E9E]">Profile Color</label>
+              <div className="flex gap-2 flex-wrap">
+                {PROFILE_COLORS.map(c => (
+                  <button
+                    key={c.id}
+                    onClick={() => setEditingProfile({ ...editingProfile, color: c.id })}
+                    style={{ backgroundColor: c.hex }}
+                    className={cn(
+                      'h-8 w-8 rounded-full transition-all',
+                      editingProfile.color === c.id ? 'ring-2 ring-offset-2 ring-slate-400 scale-110' : 'opacity-70 hover:opacity-100'
+                    )}
+                    title={c.label}
+                  />
+                ))}
               </div>
             </div>
             <button onClick={resetKidPin} className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 py-3 text-xs font-bold text-red-600 hover:bg-red-100 transition-all">

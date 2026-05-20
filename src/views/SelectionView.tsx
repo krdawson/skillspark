@@ -4,6 +4,7 @@ import { ChevronRight, Flame } from 'lucide-react';
 import { Profile, Goal } from '../types';
 import { cn } from '../lib/cn';
 import { calculateLevelData } from '../lib/utils';
+import { getProfileColor } from '../lib/profileColors';
 import Modal from '../components/Modal';
 
 interface Props {
@@ -89,7 +90,7 @@ export default function SelectionView({ profiles, goals, adminPin, calculateStre
 
           <div className="flex-1 flex flex-col items-center justify-center px-6 pb-12 gap-6">
             <div className="text-center">
-              <div className="mx-auto mb-3 h-20 w-20 rounded-2xl bg-blue-500 flex items-center justify-center text-white text-4xl font-black shadow-lg">
+              <div style={{ backgroundColor: getProfileColor(pinnedProfile.color) }} className="mx-auto mb-3 h-20 w-20 rounded-2xl flex items-center justify-center text-white text-4xl font-black shadow-lg">
                 {pinnedProfile.name.charAt(0)}
               </div>
               <h2 className="text-white text-2xl font-black">Hey, {pinnedProfile.name}!</h2>
@@ -205,7 +206,7 @@ export default function SelectionView({ profiles, goals, adminPin, calculateStre
                   className="flex w-full items-center justify-between rounded-2xl bg-[#162236] p-5 transition-all hover:bg-[#1d2e47] hover:scale-[1.02] active:scale-[0.98]"
                 >
                   <div className="flex flex-1 items-center gap-4">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500 text-white shrink-0 font-black text-lg">
+                    <div style={{ backgroundColor: getProfileColor(p.color) }} className="flex h-11 w-11 items-center justify-center rounded-xl text-white shrink-0 font-black text-lg">
                       {p.name.charAt(0)}
                     </div>
                     <div className="text-left flex-1 min-w-0">
