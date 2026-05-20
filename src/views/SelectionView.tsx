@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronRight, Flame, CheckCircle2, Circle, Users, Trophy } from 'lucide-react';
+import { ChevronRight, Flame } from 'lucide-react';
 import { Profile, Goal } from '../types';
 import { cn } from '../lib/cn';
 import { calculateLevelData } from '../lib/utils';
@@ -29,7 +29,6 @@ export default function SelectionView({ profiles, goals, adminPin, calculateStre
   );
 
   const kidProfiles = profiles.filter(p => p.role === 'kid');
-  const teamQuests = goals.filter(g => g.isTeam);
   const pinnedProfile = deviceProfileId ? kidProfiles.find(p => p.id === deviceProfileId) : null;
 
   function handleProfileClick(profile: Profile) {
@@ -260,71 +259,6 @@ export default function SelectionView({ profiles, goals, adminPin, calculateStre
               <span className="text-sm font-bold">Parent sign in</span>
             </motion.button>
 
-            {/* Team quests */}
-            {teamQuests.length > 0 && (
-              <div className="space-y-3 pt-2">
-                {teamQuests.map((quest, i) => {
-                  const maxTarget = quest.milestones.length > 0 ? Math.max(...quest.milestones.map(m => m.target)) : 100;
-                  const progress = Math.min(100, (quest.currentValue / maxTarget) * 100);
-                  return (
-                    <motion.div
-                      key={quest.id}
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.05 * (kidProfiles.length + 1) + 0.05 * i }}
-                      className="rounded-3xl bg-[#FF6321] p-5 text-white shadow-xl overflow-hidden relative text-left group"
-                    >
-                      <div className="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform">
-                        <Trophy size={100} />
-                      </div>
-                      <div className="relative z-10">
-                        <div className="flex items-start justify-between mb-3">
-                          <div>
-                            <div className="flex items-center gap-1.5 mb-1">
-                              <Users size={10} className="opacity-70" />
-                              <p className="text-[10px] font-black uppercase tracking-widest opacity-70">Shared Team Quest</p>
-                            </div>
-                            <h4 className="text-lg font-black leading-tight">{quest.title}</h4>
-                          </div>
-                          <div className="flex -space-x-2">
-                            {kidProfiles.map(p => (
-                              <div key={p.id} className="h-7 w-7 rounded-full border-2 border-[#FF6321] bg-white flex items-center justify-center text-[10px] font-black text-[#FF6321]">
-                                {p.name.charAt(0)}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="mb-3">
-                          <div className="flex justify-between text-[10px] font-black uppercase tracking-wide opacity-70 mb-1.5">
-                            <span>Team Progress</span>
-                            <span>{quest.currentValue} / {maxTarget}</span>
-                          </div>
-                          <div className="h-2 w-full bg-white/20 rounded-full overflow-hidden">
-                            <motion.div
-                              initial={{ width: 0 }}
-                              animate={{ width: `${progress}%` }}
-                              transition={{ duration: 1, ease: 'easeOut' }}
-                              className="h-full bg-white rounded-full"
-                            />
-                          </div>
-                        </div>
-                        <div className="flex gap-2 flex-wrap">
-                          {quest.milestones.sort((a, b) => a.target - b.target).map(m => (
-                            <div key={m.id} className={cn(
-                              'flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase',
-                              m.isAchieved ? 'bg-white text-[#FF6321]' : 'bg-white/10 text-white border border-white/20'
-                            )}>
-                              {m.isAchieved ? <CheckCircle2 size={9} /> : <Circle size={9} />}
-                              {m.reward}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            )}
           </div>
         </div>
       </motion.div>
