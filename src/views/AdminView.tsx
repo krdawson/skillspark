@@ -296,39 +296,84 @@ export default function AdminView({ profiles, drills, goals, history, theme, adm
                 />
 
                 {/* Kid's quests inline */}
-                <div className="mt-3 space-y-2 pl-1">
+                <div className="mt-3 space-y-3 pl-1">
                   {kidGoals.map(g => {
-                    const maxTarget = g.milestones.length > 0 ? Math.max(...g.milestones.map(m => m.target)) : 1;
-                    const pct = Math.min(100, (g.currentValue / maxTarget) * 100);
-                    const nextMilestone = g.milestones.find(m => !m.isAchieved);
+                    const sorted = [...g.milestones].sort((a, b) => a.target - b.target);
+                    const maxTarget = sorted.length > 0 ? sorted[sorted.length - 1].target : 1;
+                    const fillPct = Math.min(100, (g.currentValue / maxTarget) * 100);
                     return (
-                      <div key={g.id} className="flex items-center gap-3 rounded-2xl bg-white dark:bg-slate-900 px-4 py-3 shadow-sm">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2 mb-1.5">
-                            <p className="font-bold text-sm dark:text-slate-100 truncate">{g.title}</p>
-                            <span className="text-[10px] font-black text-slate-400 shrink-0">
-                              {g.currentValue}/{maxTarget} {g.type === 'streak' ? 'days' : 'drills'}
-                            </span>
+                      <div key={g.id} className="rounded-2xl bg-white dark:bg-slate-900 px-4 pt-3 pb-4 shadow-sm">
+                        {/* Header */}
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <p className="font-bold text-sm dark:text-slate-100">{g.title}</p>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase">
+                              {g.currentValue} / {maxTarget} {g.type === 'streak' ? 'days' : 'drills'}
+                            </p>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                              <div className="h-full bg-blue-400 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                          <div className="flex gap-1 shrink-0">
+                            <button
+                              onClick={() => { setEditingGoal(g); setEditGoalOpen(true); }}
+                              className="rounded-lg bg-slate-50 dark:bg-slate-800 px-2.5 py-1.5 text-[10px] font-bold text-slate-400 hover:text-slate-600 transition-colors"
+                            >Edit</button>
+                            <button
+                              onClick={() => { if (confirm('Delete this quest?')) deleteGoal(g.id); }}
+                              className="rounded-lg px-2 py-1.5 text-slate-300 hover:text-red-400 transition-colors font-bold"
+                            >×</button>
+                          </div>
+                        </div>
+
+                        {/* Milestone track */}
+                        {sorted.length > 0 && (
+                          <div className="relative">
+                            {/* Bar */}
+                            <div className="relative h-2 bg-slate-100 dark:bg-slate-800 rounded-full mx-2">
+                              <div
+                                className="h-full bg-[#FF6321] rounded-full transition-all duration-700"
+                                style={{ width: `${fillPct}%` }}
+                              />
+                              {/* Milestone circles on the bar */}
+                              {sorted.map(m => {
+                                const pos = (m.target / maxTarget) * 100;
+                                return (
+                                  <div
+                                    key={m.id}
+                                    className={cn(
+                                      'absolute top-1/2 h-4 w-4 rounded-full border-2 -translate-y-1/2 -translate-x-1/2 transition-colors',
+                                      m.isAchieved
+                                        ? 'bg-green-500 border-white dark:border-slate-900'
+                                        : g.currentValue >= m.target
+                                          ? 'bg-[#FF6321] border-white dark:border-slate-900'
+                                          : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600'
+                                    )}
+                                    style={{ left: `${pos}%` }}
+                                  />
+                                );
+                              })}
                             </div>
-                            {nextMilestone && (
-                              <span className="text-[9px] text-slate-400 shrink-0">🎁 {nextMilestone.reward}</span>
-                            )}
+
+                            {/* Reward labels below circles */}
+                            <div className="relative h-8 mt-0.5 mx-2">
+                              {sorted.map(m => {
+                                const pos = (m.target / maxTarget) * 100;
+                                return (
+                                  <div
+                                    key={m.id}
+                                    className="absolute flex flex-col items-center -translate-x-1/2 pt-0.5"
+                                    style={{ left: `${pos}%` }}
+                                  >
+                                    <span className={cn(
+                                      'text-[8px] font-black whitespace-nowrap',
+                                      m.isAchieved ? 'text-green-500' : 'text-slate-400 dark:text-slate-600'
+                                    )}>
+                                      {m.reward}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex gap-1 shrink-0">
-                          <button
-                            onClick={() => { setEditingGoal(g); setEditGoalOpen(true); }}
-                            className="rounded-lg bg-slate-50 dark:bg-slate-800 px-2.5 py-1.5 text-[10px] font-bold text-slate-400 hover:text-slate-600 transition-colors"
-                          >Edit</button>
-                          <button
-                            onClick={() => { if (confirm('Delete this quest?')) deleteGoal(g.id); }}
-                            className="rounded-lg px-2 py-1.5 text-slate-300 hover:text-red-400 transition-colors font-bold"
-                          >×</button>
-                        </div>
+                        )}
                       </div>
                     );
                   })}
@@ -351,29 +396,53 @@ export default function AdminView({ profiles, drills, goals, history, theme, adm
                 <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3">Team Goals</h3>
                 <div className="space-y-2">
                   {teamGoals.map(g => {
-                    const maxTarget = g.milestones.length > 0 ? Math.max(...g.milestones.map(m => m.target)) : 1;
-                    const pct = Math.min(100, (g.currentValue / maxTarget) * 100);
-                    const nextMilestone = g.milestones.find(m => !m.isAchieved);
+                    const sorted = [...g.milestones].sort((a, b) => a.target - b.target);
+                    const maxTarget = sorted.length > 0 ? sorted[sorted.length - 1].target : 1;
+                    const fillPct = Math.min(100, (g.currentValue / maxTarget) * 100);
                     return (
-                      <div key={g.id} className="flex items-center gap-3 rounded-2xl bg-[#FF6321]/10 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-900/30 px-4 py-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2 mb-1.5">
-                            <p className="font-bold text-sm text-[#FF6321] truncate">{g.title}</p>
-                            <span className="text-[10px] font-black text-slate-400 shrink-0">{g.currentValue}/{maxTarget} drills</span>
+                      <div key={g.id} className="rounded-2xl bg-[#FF6321]/10 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-900/30 px-4 pt-3 pb-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <p className="font-bold text-sm text-[#FF6321]">{g.title}</p>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase">{g.currentValue} / {maxTarget} drills</p>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 h-1.5 bg-orange-100 dark:bg-orange-950/40 rounded-full overflow-hidden">
-                              <div className="h-full bg-[#FF6321] rounded-full transition-all" style={{ width: `${pct}%` }} />
+                          <div className="flex gap-1 shrink-0">
+                            <button onClick={() => { setEditingGoal(g); setEditGoalOpen(true); }} className="rounded-lg bg-white/60 dark:bg-slate-800 px-2.5 py-1.5 text-[10px] font-bold text-slate-500 hover:text-slate-700 transition-colors">Edit</button>
+                            <button onClick={() => { if (confirm('Delete this quest?')) deleteGoal(g.id); }} className="rounded-lg px-2 py-1.5 text-slate-300 hover:text-red-400 transition-colors font-bold">×</button>
+                          </div>
+                        </div>
+                        {sorted.length > 0 && (
+                          <div className="relative">
+                            <div className="relative h-2 bg-orange-100 dark:bg-orange-950/40 rounded-full mx-2">
+                              <div className="h-full bg-[#FF6321] rounded-full transition-all duration-700" style={{ width: `${fillPct}%` }} />
+                              {sorted.map(m => {
+                                const pos = (m.target / maxTarget) * 100;
+                                return (
+                                  <div key={m.id}
+                                    className={cn('absolute top-1/2 h-4 w-4 rounded-full border-2 -translate-y-1/2 -translate-x-1/2 transition-colors',
+                                      m.isAchieved ? 'bg-green-500 border-white dark:border-slate-900' :
+                                      g.currentValue >= m.target ? 'bg-[#FF6321] border-white dark:border-slate-900' :
+                                      'bg-white dark:bg-slate-800 border-orange-300 dark:border-slate-600'
+                                    )}
+                                    style={{ left: `${pos}%` }}
+                                  />
+                                );
+                              })}
                             </div>
-                            {nextMilestone && (
-                              <span className="text-[9px] text-slate-400 shrink-0">🎁 {nextMilestone.reward}</span>
-                            )}
+                            <div className="relative h-8 mt-0.5 mx-2">
+                              {sorted.map(m => {
+                                const pos = (m.target / maxTarget) * 100;
+                                return (
+                                  <div key={m.id} className="absolute flex flex-col items-center -translate-x-1/2 pt-0.5" style={{ left: `${pos}%` }}>
+                                    <span className={cn('text-[8px] font-black whitespace-nowrap', m.isAchieved ? 'text-green-500' : 'text-slate-400 dark:text-slate-600')}>
+                                      {m.reward}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex gap-1 shrink-0">
-                          <button onClick={() => { setEditingGoal(g); setEditGoalOpen(true); }} className="rounded-lg bg-white/50 dark:bg-slate-800 px-2.5 py-1.5 text-[10px] font-bold text-slate-500 hover:text-slate-700 transition-colors">Edit</button>
-                          <button onClick={() => { if (confirm('Delete this quest?')) deleteGoal(g.id); }} className="rounded-lg px-2 py-1.5 text-slate-300 hover:text-red-400 transition-colors font-bold">×</button>
-                        </div>
+                        )}
                       </div>
                     );
                   })}
