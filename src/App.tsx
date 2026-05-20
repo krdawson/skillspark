@@ -5,6 +5,7 @@ import { useAppState } from './hooks/useAppState';
 import SelectionView from './views/SelectionView';
 import DashboardView from './views/DashboardView';
 import AdminView from './views/AdminView';
+import ErrorBoundary from './components/ErrorBoundary';
 
 type View = 'selection' | 'dashboard' | 'admin';
 
