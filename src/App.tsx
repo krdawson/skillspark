@@ -27,6 +27,20 @@ export default function App() {
     setActiveProfileId(null);
   }
 
+  if (state.isLoading) {
+    return (
+      <div className="min-h-screen bg-[#0d1929] flex items-center justify-center">
+        <motion.img
+          src="/logo.jpg"
+          alt="SkillSpark"
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+          className="h-40 w-auto"
+        />
+      </div>
+    );
+  }
+
   return (
     <div className={`min-h-screen font-sans transition-colors duration-300 ${
       state.theme === 'dark' ? 'bg-slate-950 text-slate-100 dark' : 'bg-[#F5F5F5] text-[#1A1A1A] light'
