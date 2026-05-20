@@ -39,7 +39,7 @@ Return ONLY a valid JSON array, no markdown, no extra text. Each item must have 
   "type": "sport-specific" | "conditioning" | "strength"
 }`;
 
-  const MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash'];
+  const MODELS = ['gemini-2.0-flash', 'gemini-2.0-flash-lite'];
 
   const ai = new GoogleGenAI({ apiKey });
 
@@ -77,7 +77,7 @@ Return ONLY a valid JSON array, no markdown, no extra text. Each item must have 
 
     } catch (err: any) {
       lastError = err;
-      console.error(`[generate-drills] ${model} failed:`, err?.message ?? err);
+      console.error(`[generate-drills] ${model} failed — code: ${err?.error?.code ?? err?.code ?? 'unknown'}, message: ${err?.message ?? JSON.stringify(err)}`);
       // Bail immediately on auth errors; retry on quota/server errors
       const code = err?.status ?? err?.httpStatus ?? err?.error?.code ?? err?.code;
       if (code === 400 || code === 403) break;
