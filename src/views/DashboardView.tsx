@@ -74,6 +74,36 @@ export default function DashboardView({ activeProfile, drills, goals, dailyCompl
 
       {tab === 'today' ? (
         <>
+          {/* ── Drills first ── */}
+          <section className="space-y-4 mb-8">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold">Today's Drills</h3>
+              {streak > 0 && (
+                <div className="flex items-center gap-1 text-[#FF6321] font-black text-sm">
+                  <Flame size={16} />
+                  <span>{streak} Day Streak</span>
+                </div>
+              )}
+            </div>
+            <div className="grid gap-4">
+              {todaysDrills.map(drill => (
+                <DrillCard
+                  key={drill.id}
+                  drill={drill}
+                  isDone={!!dailyCompleted[`${activeProfile.id}-${drill.id}`]}
+                  onToggle={() => toggleDrill(drill.id, activeProfile)}
+                />
+              ))}
+              {todaysDrills.length === 0 && (
+                <div className="py-12 text-center text-slate-400">
+                  <Timer size={48} className="mx-auto mb-4 opacity-20" />
+                  <p>No drills found for this sport. Ask your parent to add some!</p>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* ── Progress below ── */}
           {activeQuests.map(quest => {
             const isStreak = quest.type === 'streak';
             const themeText = isStreak ? 'text-orange-600 dark:text-orange-400' : 'text-blue-600 dark:text-blue-400';
@@ -170,33 +200,6 @@ export default function DashboardView({ activeProfile, drills, goals, dailyCompl
             </section>
           )}
 
-          <section className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold">Today's Drills</h3>
-              {streak > 0 && (
-                <div className="flex items-center gap-1 text-[#FF6321] font-black text-sm">
-                  <Flame size={16} />
-                  <span>{streak} Day Streak</span>
-                </div>
-              )}
-            </div>
-            <div className="grid gap-4">
-              {todaysDrills.map(drill => (
-                <DrillCard
-                  key={drill.id}
-                  drill={drill}
-                  isDone={!!dailyCompleted[`${activeProfile.id}-${drill.id}`]}
-                  onToggle={() => toggleDrill(drill.id, activeProfile)}
-                />
-              ))}
-              {todaysDrills.length === 0 && (
-                <div className="py-12 text-center text-slate-400">
-                  <Timer size={48} className="mx-auto mb-4 opacity-20" />
-                  <p>No drills found for this sport. Ask your parent to add some!</p>
-                </div>
-              )}
-            </div>
-          </section>
         </>
       ) : (
         <section className="space-y-4">

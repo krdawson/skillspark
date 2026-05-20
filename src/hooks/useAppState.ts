@@ -29,7 +29,7 @@ function loadGoals(): Goal[] {
   } else {
     goals = [
       {
-        id: 'g1', profileId: '2', title: 'Soccer Master Journey', type: 'total_drills', currentValue: 15,
+        id: 'g1', profileId: '2', title: 'Soccer Master Journey', type: 'total_drills', currentValue: 0,
         milestones: [
           { id: 'm1', target: 25, reward: 'New Soccer Ball', isAchieved: false },
           { id: 'm2', target: 50, reward: 'Soccer Cleats', isAchieved: false },
@@ -37,7 +37,7 @@ function loadGoals(): Goal[] {
         ],
       },
       {
-        id: 'g2', profileId: '3', title: 'Lacrosse Pro Streak', type: 'streak', currentValue: 5,
+        id: 'g2', profileId: '3', title: 'Lacrosse Pro Streak', type: 'streak', currentValue: 0,
         milestones: [
           { id: 'm1', target: 7, reward: 'Ice Cream', isAchieved: false },
           { id: 'm2', target: 15, reward: 'New Stick', isAchieved: false },
