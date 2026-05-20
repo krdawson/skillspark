@@ -80,42 +80,24 @@ export default function SelectionView({ profiles, goals, adminPin, calculateStre
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="min-h-screen lg:flex"
+        className="min-h-screen flex flex-col"
       >
-        {/* ── Logo panel ── */}
-        {/* Mobile: horizontal strip across the top */}
-        <div className="bg-[#0d1929] lg:hidden flex items-center gap-4 px-5 py-4">
+        {/* ── Compact header ── */}
+        <div className="bg-[#0d1929] px-5 py-3 flex items-center">
           <motion.img
             src="/logo.jpg"
             alt="SkillSpark"
-            initial={{ opacity: 0, x: -10 }}
+            initial={{ opacity: 0, x: -8 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 }}
-            className="h-16 w-16 rounded-xl object-cover shrink-0 shadow-lg"
+            className="h-12 w-auto rounded-lg object-cover"
           />
-          <div>
-            <p className="text-slate-300 text-xs font-medium mt-0.5">Who is practicing today?</p>
-          </div>
-        </div>
-
-        {/* Desktop: full-height left sidebar */}
-        <div className="hidden lg:flex bg-[#0d1929] w-80 shrink-0 min-h-screen flex-col items-center justify-center p-8 sticky top-0">
-          <motion.img
-            src="/logo.jpg"
-            alt="SkillSpark"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1, duration: 0.4 }}
-            className="w-56 rounded-2xl shadow-[0_0_60px_rgba(96,165,250,0.15)]"
-          />
-          <p className="text-slate-500 text-xs mt-6 text-center">Practice. Progress. Win.</p>
         </div>
 
         {/* ── Profiles panel ── */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="max-w-lg mx-auto px-5 py-8 lg:px-10 lg:py-12 space-y-4">
-
-            <p className="hidden lg:block text-[#9E9E9E] dark:text-slate-500 font-medium mb-6">
+        <div className="flex-1">
+          <div className="max-w-lg mx-auto px-5 py-8 space-y-4">
+            <p className="text-[#9E9E9E] dark:text-slate-500 font-medium">
               Who is practicing today?
             </p>
 
