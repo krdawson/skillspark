@@ -300,7 +300,7 @@ export function useAppState() {
     });
 
     // Compute new XP
-    const newXP = isDone ? (profile.xp ?? 0) + 25 : (profile.xp ?? 0);
+    const newXP = isDone ? (profile.xp ?? 0) + 25 : Math.max(0, (profile.xp ?? 0) - 25);
     const leveledUp = isDone && calculateLevelData(newXP).level > calculateLevelData(profile.xp ?? 0).level;
 
     // ── Apply local state (optimistic) ────────────────────────────────────
@@ -312,9 +312,9 @@ export function useAppState() {
     });
     setGoals(newGoals);
 
+    const newProfiles = profiles.map(p => p.id === profile.id ? { ...p, xp: newXP } : p);
+    setProfiles(newProfiles);
     if (isDone) {
-      const newProfiles = profiles.map(p => p.id === profile.id ? { ...p, xp: newXP } : p);
-      setProfiles(newProfiles);
       if (leveledUp && !milestoneReached) {
         showNotification(`LEVEL UP! You are now Level ${calculateLevelData(newXP).level}! ⚡️`);
         triggerConfetti();
@@ -356,9 +356,7 @@ export function useAppState() {
             .update({ current_value: g.currentValue, milestones: g.milestones })
             .eq('id', g.id).eq('family_id', FAMILY_ID);
         }
-        if (isDone) {
-          await supabase.from('profiles').update({ xp: newXP }).eq('id', profile.id).eq('family_id', FAMILY_ID);
-        }
+        await supabase.from('profiles').update({ xp: newXP }).eq('id', profile.id).eq('family_id', FAMILY_ID);
       } catch (err) {
         console.error('[toggleDrill] write failed:', err);
       }
