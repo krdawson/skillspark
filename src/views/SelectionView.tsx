@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, Settings, ChevronRight, Flame, Users, CheckCircle2, Circle } from 'lucide-react';
+import { Settings, ChevronRight, Flame, CheckCircle2, Circle, Users, Trophy } from 'lucide-react';
 import { Profile, Goal } from '../types';
 import { cn } from '../lib/cn';
 import { calculateLevelData } from '../lib/utils';
@@ -77,144 +77,178 @@ export default function SelectionView({ profiles, goals, adminPin, calculateStre
   return (
     <>
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 1.05 }}
-        className="flex min-h-screen items-center justify-center p-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="min-h-screen lg:flex"
       >
-        <div className="w-full max-w-md space-y-8 text-center">
+        {/* ── Logo panel ── */}
+        {/* Mobile: horizontal strip across the top */}
+        <div className="bg-[#0d1929] lg:hidden flex items-center gap-4 px-5 py-4">
+          <motion.img
+            src="/logo.jpg"
+            alt="SkillSpark"
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+            className="h-16 w-16 rounded-xl object-cover shrink-0 shadow-lg"
+          />
           <div>
-            <motion.div
-              initial={{ rotate: -10 }}
-              animate={{ rotate: 0 }}
-              transition={{ type: 'spring', stiffness: 200 }}
-              className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-[#FF6321] text-white shadow-lg"
-            >
-              <Trophy size={40} />
-            </motion.div>
-            <h1 className="mt-6 text-4xl font-black tracking-tight">SkillSpark</h1>
-            <p className="text-[#9E9E9E]">Who is practicing today?</p>
+            <p className="text-slate-300 text-xs font-medium mt-0.5">Who is practicing today?</p>
           </div>
+        </div>
 
-          <div className="grid gap-4">
-            {profiles.map(p => {
-              const goal = goals.find(g => g.profileId === p.id);
-              const streak = calculateStreak(p.id);
-              const { level } = calculateLevelData(p.xp || 0);
-              return (
-                <button
-                  key={p.id}
-                  onClick={() => handleProfileClick(p)}
-                  className="flex w-full items-center justify-between rounded-2xl bg-white dark:bg-slate-900 p-6 shadow-sm transition-all hover:scale-[1.02] hover:shadow-md active:scale-[0.98]"
-                >
-                  <div className="flex flex-1 items-center gap-4">
-                    <div className={cn(
-                      'flex h-12 w-12 items-center justify-center rounded-full text-white shrink-0',
-                      p.role === 'admin' ? 'bg-slate-800 dark:bg-slate-700' : 'bg-blue-500'
-                    )}>
-                      {p.role === 'admin' ? <Settings size={24} /> : <span className="text-lg font-black">{p.name.charAt(0)}</span>}
-                    </div>
-                    <div className="text-left flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-black text-lg leading-tight dark:text-slate-100">{p.name}</p>
+        {/* Desktop: full-height left sidebar */}
+        <div className="hidden lg:flex bg-[#0d1929] w-80 shrink-0 min-h-screen flex-col items-center justify-center p-8 sticky top-0">
+          <motion.img
+            src="/logo.jpg"
+            alt="SkillSpark"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.1, duration: 0.4 }}
+            className="w-56 rounded-2xl shadow-[0_0_60px_rgba(96,165,250,0.15)]"
+          />
+          <p className="text-slate-500 text-xs mt-6 text-center">Practice. Progress. Win.</p>
+        </div>
+
+        {/* ── Profiles panel ── */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-lg mx-auto px-5 py-8 lg:px-10 lg:py-12 space-y-4">
+
+            <p className="hidden lg:block text-[#9E9E9E] dark:text-slate-500 font-medium mb-6">
+              Who is practicing today?
+            </p>
+
+            {/* Profile cards */}
+            <div className="grid gap-3">
+              {profiles.map((p, i) => {
+                const goal = goals.find(g => g.profileId === p.id);
+                const streak = calculateStreak(p.id);
+                const { level } = calculateLevelData(p.xp || 0);
+                return (
+                  <motion.button
+                    key={p.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.05 * i }}
+                    onClick={() => handleProfileClick(p)}
+                    className="flex w-full items-center justify-between rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm transition-all hover:scale-[1.02] hover:shadow-md active:scale-[0.98]"
+                  >
+                    <div className="flex flex-1 items-center gap-4">
+                      <div className={cn(
+                        'flex h-11 w-11 items-center justify-center rounded-xl text-white shrink-0 font-black text-lg',
+                        p.role === 'admin' ? 'bg-slate-800 dark:bg-slate-700' : 'bg-blue-500'
+                      )}>
+                        {p.role === 'admin' ? <Settings size={20} /> : p.name.charAt(0)}
+                      </div>
+                      <div className="text-left flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="font-black text-base leading-tight dark:text-slate-100 truncate">{p.name}</p>
+                          {p.role === 'kid' && (
+                            <span className="shrink-0 rounded-md bg-yellow-100 dark:bg-yellow-950/30 px-1.5 py-0.5 text-[10px] font-black text-yellow-700 dark:text-yellow-500 uppercase">
+                              LVL {level}
+                            </span>
+                          )}
+                        </div>
                         {p.role === 'kid' && (
-                          <span className="rounded-md bg-yellow-100 dark:bg-yellow-950/30 px-1.5 py-0.5 text-[10px] font-black text-yellow-700 dark:text-yellow-500 uppercase">
-                            LVL {level}
-                          </span>
+                          <div className="flex items-center gap-3 mt-1">
+                            {streak > 0 && (
+                              <div className="flex items-center gap-1 text-[#FF6321] font-black text-xs">
+                                <Flame size={12} />
+                                <span>{streak}d streak</span>
+                              </div>
+                            )}
+                            {goal && goal.milestones.length > 0 && (() => {
+                              const maxTarget = Math.max(...goal.milestones.map(m => m.target));
+                              const pct = Math.min(100, (goal.currentValue / maxTarget) * 100);
+                              return (
+                                <div className="flex items-center gap-1.5 flex-1">
+                                  <div className="h-1.5 flex-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden max-w-[72px]">
+                                    <div className="h-full bg-blue-500 rounded-full" style={{ width: `${pct}%` }} />
+                                  </div>
+                                  <span className="text-[10px] font-bold text-slate-400">{Math.round(pct)}%</span>
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        )}
+                        {p.role === 'admin' && (
+                          <p className="text-[10px] text-slate-400 font-medium mt-0.5">Parent / Admin</p>
                         )}
                       </div>
-                      {p.role === 'kid' && (
-                        <div className="flex items-center gap-3 mt-1">
-                          {streak > 0 && (
-                            <div className="flex items-center gap-1 text-[#FF6321] font-black text-xs">
-                              <Flame size={14} />
-                              <span>{streak} DAY STREAK</span>
-                            </div>
-                          )}
-                          {goal && goal.milestones.length > 0 && (() => {
-                            const maxTarget = Math.max(...goal.milestones.map(m => m.target));
-                            const pct = Math.min(100, (goal.currentValue / maxTarget) * 100);
-                            return (
-                              <div className="flex items-center gap-1.5 flex-1">
-                                <div className="h-1.5 flex-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden max-w-[80px]">
-                                  <div className="h-full bg-blue-500 rounded-full" style={{ width: `${pct}%` }} />
-                                </div>
-                                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">{Math.round(pct)}% TO GOAL</span>
-                              </div>
-                            );
-                          })()}
-                        </div>
-                      )}
                     </div>
-                  </div>
-                  <ChevronRight className="text-slate-300 dark:text-slate-700 ml-4 shrink-0" />
-                </button>
-              );
-            })}
-          </div>
+                    <ChevronRight size={18} className="text-slate-300 dark:text-slate-700 ml-3 shrink-0" />
+                  </motion.button>
+                );
+              })}
+            </div>
 
-          {teamQuests.length > 0 && (
-            <div className="space-y-4 pt-4">
-              {teamQuests.map(quest => {
-                const maxTarget = quest.milestones.length > 0 ? Math.max(...quest.milestones.map(m => m.target)) : 100;
-                const progress = (quest.currentValue / maxTarget) * 100;
-                return (
-                  <motion.div
-                    key={quest.id}
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    className="rounded-3xl bg-[#FF6321] p-6 text-white shadow-xl overflow-hidden relative text-left group"
-                  >
-                    <div className="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform">
-                      <Trophy size={120} />
-                    </div>
-                    <div className="relative z-10">
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <div className="flex items-center gap-1.5 mb-1">
-                            <Users size={12} className="opacity-80" />
-                            <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Shared Team Quest</p>
+            {/* Team quests */}
+            {teamQuests.length > 0 && (
+              <div className="space-y-3 pt-2">
+                {teamQuests.map((quest, i) => {
+                  const maxTarget = quest.milestones.length > 0 ? Math.max(...quest.milestones.map(m => m.target)) : 100;
+                  const progress = Math.min(100, (quest.currentValue / maxTarget) * 100);
+                  return (
+                    <motion.div
+                      key={quest.id}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.05 * profiles.length + 0.05 * i }}
+                      className="rounded-3xl bg-[#FF6321] p-5 text-white shadow-xl overflow-hidden relative text-left group"
+                    >
+                      <div className="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform">
+                        <Trophy size={100} />
+                      </div>
+                      <div className="relative z-10">
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <Users size={10} className="opacity-70" />
+                              <p className="text-[10px] font-black uppercase tracking-widest opacity-70">Shared Team Quest</p>
+                            </div>
+                            <h4 className="text-lg font-black leading-tight">{quest.title}</h4>
                           </div>
-                          <h4 className="text-2xl font-black leading-tight tracking-tight">{quest.title}</h4>
+                          <div className="flex -space-x-2">
+                            {profiles.filter(p => p.role === 'kid').map(p => (
+                              <div key={p.id} className="h-7 w-7 rounded-full border-2 border-[#FF6321] bg-white flex items-center justify-center text-[10px] font-black text-[#FF6321]">
+                                {p.name.charAt(0)}
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                        <div className="flex -space-x-3">
-                          {profiles.filter(p => p.role === 'kid').map(p => (
-                            <div key={p.id} className="h-9 w-9 rounded-full border-2 border-[#FF6321] bg-white flex items-center justify-center text-xs font-black text-[#FF6321] shadow-md">
-                              {p.name.charAt(0)}
+                        <div className="mb-3">
+                          <div className="flex justify-between text-[10px] font-black uppercase tracking-wide opacity-70 mb-1.5">
+                            <span>Team Progress</span>
+                            <span>{quest.currentValue} / {maxTarget}</span>
+                          </div>
+                          <div className="h-2 w-full bg-white/20 rounded-full overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${progress}%` }}
+                              transition={{ duration: 1, ease: 'easeOut' }}
+                              className="h-full bg-white rounded-full"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex gap-2 flex-wrap">
+                          {quest.milestones.sort((a, b) => a.target - b.target).map(m => (
+                            <div key={m.id} className={cn(
+                              'flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase',
+                              m.isAchieved ? 'bg-white text-[#FF6321]' : 'bg-white/10 text-white border border-white/20'
+                            )}>
+                              {m.isAchieved ? <CheckCircle2 size={9} /> : <Circle size={9} />}
+                              {m.reward}
                             </div>
                           ))}
                         </div>
                       </div>
-                      <div className="mb-4 space-y-2">
-                        <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest opacity-80">
-                          <span>Team Progress</span>
-                          <span>{quest.currentValue} / {maxTarget} Drills</span>
-                        </div>
-                        <div className="h-3 w-full bg-white/20 rounded-full overflow-hidden shadow-inner">
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${Math.min(100, progress)}%` }}
-                            className="h-full bg-white shadow-[0_0_15px_rgba(255,255,255,0.5)] transition-all duration-1000"
-                          />
-                        </div>
-                      </div>
-                      <div className="flex gap-2 items-center overflow-x-auto pb-1">
-                        {quest.milestones.sort((a, b) => a.target - b.target).map(m => (
-                          <div key={m.id} className={cn(
-                            'shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase transition-all',
-                            m.isAchieved ? 'bg-white text-[#FF6321]' : 'bg-white/10 text-white border border-white/20'
-                          )}>
-                            {m.isAchieved ? <CheckCircle2 size={10} /> : <Circle size={10} />}
-                            <span>{m.reward}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          )}
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </motion.div>
 
@@ -233,7 +267,7 @@ export default function SelectionView({ profiles, goals, adminPin, calculateStre
             autoFocus
           />
           <button onClick={handleKidLogin} className="w-full rounded-2xl bg-[#FF6321] py-4 font-black text-white active:scale-95 transition-transform">
-            {isSettingPin ? "Set PIN & Start" : "Let's Go!"}
+            {isSettingPin ? 'Set PIN & Start' : "Let's Go!"}
           </button>
         </div>
       </Modal>
