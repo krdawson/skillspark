@@ -1,11 +1,22 @@
 import { createClient } from '@supabase/supabase-js';
 
+const url  = import.meta.env.VITE_SUPABASE_URL  as string | undefined;
+const key  = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+
+if (!url || !key) {
+  console.error(
+    '[SkillSpark] Missing Supabase env vars. ' +
+    'VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY must be set in Vercel → ' +
+    'Settings → Environment Variables (Production environment).'
+  );
+}
+
 export const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL as string,
-  import.meta.env.VITE_SUPABASE_ANON_KEY as string,
+  url  ?? 'https://placeholder.supabase.co',
+  key  ?? 'placeholder',
 );
 
-export const FAMILY_ID: string = import.meta.env.VITE_FAMILY_ID as string;
+export const FAMILY_ID: string = (import.meta.env.VITE_FAMILY_ID as string | undefined) ?? '';
 
 // ── Row → App type mappers ──────────────────────────────────────────────────
 
