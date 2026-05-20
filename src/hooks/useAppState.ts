@@ -107,7 +107,7 @@ export function useAppState() {
     return localStorage.getItem('parentPin') || DEFAULT_PIN;
   });
 
-  const [notification, setNotification] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{ msg: string; isError: boolean } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
   // Keyed by `${profileId}-${date}` — naturally expires each day
@@ -124,10 +124,10 @@ export function useAppState() {
   useEffect(() => { localStorage.setItem('dailyCompleted', JSON.stringify(dailyCompleted)); }, [dailyCompleted]);
   useEffect(() => { localStorage.setItem('history', JSON.stringify(history)); }, [history]);
 
-  // Notification auto-clear
+  // Notification auto-clear — errors stay 8s, others 3s
   useEffect(() => {
     if (!notification) return;
-    const t = setTimeout(() => setNotification(null), 3000);
+    const t = setTimeout(() => setNotification(null), notification.isError ? 8000 : 3000);
     return () => clearTimeout(t);
   }, [notification]);
 
@@ -141,8 +141,9 @@ export function useAppState() {
     }));
   }, [history]);
 
-  function showNotification(msg: string) {
-    setNotification(msg);
+  function showNotification(msg: string, isError = false) {
+    if (isError) console.error('[SkillSpark]', msg);
+    setNotification({ msg, isError });
   }
 
   function triggerConfetti() {
@@ -352,7 +353,7 @@ export function useAppState() {
       showNotification(`Fresh drills generated for ${profile.name}! ⚡`);
     } catch (err: any) {
       const msg: string = err?.message ?? 'Something went wrong';
-      showNotification(`AI error: ${msg}`);
+      showNotification(`AI error: ${msg}`, true);
     } finally {
       setIsGenerating(false);
     }

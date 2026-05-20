@@ -39,36 +39,51 @@ Return ONLY a valid JSON array, no markdown, no extra text. Each item must have 
   "type": "sport-specific" | "conditioning" | "strength"
 }`;
 
-  try {
-    const ai = new GoogleGenAI({ apiKey });
+  const MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash'];
 
-    const result = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-        temperature: 0.8,
-      },
-    });
+  const ai = new GoogleGenAI({ apiKey });
 
-    const text = result.text();
-    const parsed = JSON.parse(text);
+  let lastError: any;
 
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      throw new Error('Model returned unexpected format');
+  for (const model of MODELS) {
+    try {
+      console.log(`[generate-drills] trying model: ${model}`);
+
+      const result = await ai.models.generateContent({
+        model,
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json',
+          temperature: 0.8,
+        },
+      });
+
+      const text = result.text();
+      const parsed = JSON.parse(text);
+
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        throw new Error('Model returned unexpected format');
+      }
+
+      const drills = parsed.slice(0, drillsPerDay).map((d: any) => ({
+        title:       String(d.title       ?? 'Practice Drill'),
+        description: String(d.description ?? ''),
+        reps:        String(d.reps        ?? ''),
+        type:        ['sport-specific', 'conditioning', 'strength'].includes(d.type) ? d.type : 'sport-specific',
+      }));
+
+      console.log(`[generate-drills] success with ${model}, returned ${drills.length} drills`);
+      return res.status(200).json({ drills });
+
+    } catch (err: any) {
+      lastError = err;
+      console.error(`[generate-drills] ${model} failed:`, err?.message ?? err);
+      // Only retry on rate-limit / server errors; bail immediately on bad API key
+      const status = err?.status ?? err?.httpStatus;
+      if (status === 400 || status === 403) break;
     }
-
-    // Sanitise — ensure every field exists
-    const drills = parsed.slice(0, drillsPerDay).map((d: any) => ({
-      title:       String(d.title       ?? 'Practice Drill'),
-      description: String(d.description ?? ''),
-      reps:        String(d.reps        ?? ''),
-      type:        ['sport-specific', 'conditioning', 'strength'].includes(d.type) ? d.type : 'sport-specific',
-    }));
-
-    return res.status(200).json({ drills });
-  } catch (err: any) {
-    console.error('[generate-drills]', err?.message ?? err);
-    return res.status(500).json({ error: err?.message ?? 'Failed to generate drills' });
   }
+
+  const message = lastError?.message ?? 'Failed to generate drills';
+  return res.status(500).json({ error: message });
 }

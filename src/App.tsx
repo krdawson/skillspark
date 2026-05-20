@@ -95,8 +95,10 @@ export default function App() {
             exit={{ opacity: 0, y: -20 }}
             className="fixed inset-x-0 top-0 z-[100] flex justify-center px-6 pointer-events-none"
           >
-            <div className="rounded-2xl bg-slate-900 px-6 py-3 text-sm font-bold text-white shadow-2xl">
-              {state.notification}
+            <div className={`rounded-2xl px-6 py-3 text-sm font-bold text-white shadow-2xl max-w-sm text-center ${
+              state.notification.isError ? 'bg-red-600' : 'bg-slate-900'
+            }`}>
+              {state.notification.msg}
             </div>
           </motion.div>
         )}
