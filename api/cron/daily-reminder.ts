@@ -13,13 +13,13 @@ webPush.setVapidDetails(
   process.env.VAPID_PRIVATE_KEY!,
 );
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(_req: VercelRequest, res: VercelResponse) {
   const familyId = process.env.VITE_FAMILY_ID!;
 
-  // Load family settings
+  // Load settings — check notifications are enabled and not already sent today
   const { data: settings } = await supabase
     .from('settings')
-    .select('notification_time, notification_enabled, last_reminder_sent')
+    .select('notification_enabled, last_reminder_sent')
     .eq('family_id', familyId)
     .single();
 
@@ -27,30 +27,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ skipped: 'notifications disabled' });
   }
 
-  // Check current time in CT (handles DST automatically)
-  const ctFormatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/Chicago',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
-  const ctNow = ctFormatter.format(new Date()); // e.g. "09:00"
-  const configuredTime = settings.notification_time ?? '09:00';
-
-  const todayCT = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/Chicago',
-    year: 'numeric', month: '2-digit', day: '2-digit',
-  }).format(new Date()).replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$1-$2'); // yyyy-MM-dd
-
-  // Only send if it's the right hour and not already sent today
-  if (ctNow.slice(0, 5) !== configuredTime) {
-    return res.status(200).json({ skipped: `not time yet (${ctNow} vs ${configuredTime})` });
-  }
-  if (settings.last_reminder_sent === todayCT) {
+  // Guard against duplicate sends (e.g. manual trigger)
+  const todayUTC = new Date().toISOString().slice(0, 10);
+  if (settings.last_reminder_sent === todayUTC) {
     return res.status(200).json({ skipped: 'already sent today' });
   }
 
-  // Get all kid subscriptions for this family
+  // Get all kid subscriptions
   const { data: kidProfiles } = await supabase
     .from('profiles')
     .select('id')
@@ -88,11 +71,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     })
   );
 
-  // Mark as sent today
   await supabase.from('settings')
-    .update({ last_reminder_sent: todayCT })
+    .update({ last_reminder_sent: todayUTC })
     .eq('family_id', familyId);
 
-  console.log(`[daily-reminder] sent ${sent} notifications at ${ctNow} CT`);
-  return res.status(200).json({ sent, time: ctNow });
+  console.log(`[daily-reminder] sent ${sent} notifications`);
+  return res.status(200).json({ sent });
 }
