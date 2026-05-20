@@ -78,9 +78,9 @@ Return ONLY a valid JSON array, no markdown, no extra text. Each item must have 
     } catch (err: any) {
       lastError = err;
       console.error(`[generate-drills] ${model} failed:`, err?.message ?? err);
-      // Only retry on rate-limit / server errors; bail immediately on bad API key
-      const status = err?.status ?? err?.httpStatus;
-      if (status === 400 || status === 403) break;
+      // Bail immediately on auth errors; retry on quota/server errors
+      const code = err?.status ?? err?.httpStatus ?? err?.error?.code ?? err?.code;
+      if (code === 400 || code === 403) break;
     }
   }
 
