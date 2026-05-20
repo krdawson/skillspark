@@ -78,6 +78,24 @@ export default function AdminView({ profiles, drills, goals, history, theme, adm
   const [backupModalOpen, setBackupModalOpen] = useState(false);
   const [restoring, setRestoring] = useState(false);
 
+  // Rest day picker — selected day count per kid
+  const [restDayPicks, setRestDayPicks] = useState<Record<string, number>>({});
+
+  function grantRestDays(profile: Profile, days: number) {
+    const newDates: string[] = [];
+    for (let i = 0; i < days; i++) {
+      newDates.push(format(new Date(Date.now() + i * 86400000), 'yyyy-MM-dd'));
+    }
+    const existing = (profile.restDays ?? []).filter(d => !newDates.includes(d));
+    updateProfile({ ...profile, restDays: [...existing, ...newDates] });
+    showNotification(`${days} rest day${days > 1 ? 's' : ''} granted for ${profile.name} 🛌`);
+  }
+
+  function clearRestDays(profile: Profile) {
+    updateProfile({ ...profile, restDays: (profile.restDays ?? []).filter(d => d < todayStr) });
+    showNotification('Rest days cleared.');
+  }
+
   // Notification settings
   const [notifSubscribed, setNotifSubscribed] = useState(() =>
     'Notification' in window && Notification.permission === 'granted'
@@ -297,23 +315,42 @@ export default function AdminView({ profiles, drills, goals, history, theme, adm
                 />
 
                 {/* Rest day controls */}
-                <div className="flex items-center justify-between px-1 mt-3 mb-1">
+                <div className="flex items-center justify-between px-1 mt-3 mb-1 gap-2 flex-wrap">
                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-600">Quests</p>
-                  {!(p.restDays ?? []).includes(todayStr) ? (
-                    <button
-                      onClick={() => updateProfile({ ...p, restDays: [...(p.restDays ?? []), todayStr] })}
-                      className="text-[10px] font-bold text-slate-400 hover:text-purple-500 transition-colors"
-                    >
-                      🛌 Grant rest day
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => updateProfile({ ...p, restDays: (p.restDays ?? []).filter(d => d !== todayStr) })}
-                      className="text-[10px] font-bold text-purple-500 hover:text-red-400 transition-colors"
-                    >
-                      🛌 Rest day granted · undo
-                    </button>
-                  )}
+                  {(() => {
+                    const activeDays = (p.restDays ?? []).filter(d => d >= todayStr);
+                    if (activeDays.length > 0) {
+                      return (
+                        <button onClick={() => clearRestDays(p)} className="text-[10px] font-bold text-purple-500 hover:text-red-400 transition-colors">
+                          🛌 {activeDays.length} day{activeDays.length > 1 ? 's' : ''} granted · clear
+                        </button>
+                      );
+                    }
+                    const picked = restDayPicks[p.id] ?? 1;
+                    return (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[9px] text-slate-400">🛌</span>
+                        <div className="flex gap-0.5">
+                          {[1,2,3,4,5,6,7].map(n => (
+                            <button
+                              key={n}
+                              onClick={() => setRestDayPicks(prev => ({ ...prev, [p.id]: n }))}
+                              className={cn(
+                                'h-5 w-5 rounded text-[9px] font-black transition-all',
+                                picked === n ? 'bg-purple-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-purple-100'
+                              )}
+                            >{n}</button>
+                          ))}
+                        </div>
+                        <button
+                          onClick={() => grantRestDays(p, picked)}
+                          className="text-[10px] font-bold text-purple-500 hover:text-purple-700 transition-colors"
+                        >
+                          Grant
+                        </button>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Kid's quests inline */}
