@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Moon, Sun, Plus, Users, Trophy, Medal, Dumbbell, ChevronDown, RotateCcw, Lock, Download, Upload } from 'lucide-react';
+import { ArrowLeft, Moon, Sun, Plus, Users, Trophy, Medal, Dumbbell, ChevronDown, RotateCcw, Download, Upload } from 'lucide-react';
 import { format } from 'date-fns';
 import { Profile, Drill, Goal, DailyLog, Sport, DrillType, GoalType, Milestone } from '../types';
 import { cn } from '../lib/cn';
@@ -251,6 +251,7 @@ export default function AdminView({ profiles, drills, goals, history, theme, adm
       exit={{ opacity: 0, y: -20 }}
       className="min-h-screen p-6 pb-12"
     >
+      {/* ── Header ── */}
       <header className="mb-8 flex items-center justify-between">
         <button onClick={onBack} className="flex h-10 w-10 items-center justify-center rounded-full bg-white dark:bg-slate-900 shadow-sm">
           <ArrowLeft size={20} />
@@ -258,9 +259,6 @@ export default function AdminView({ profiles, drills, goals, history, theme, adm
         <div className="flex items-center gap-3">
           <button onClick={toggleTheme} className="flex h-10 w-10 items-center justify-center rounded-full bg-white dark:bg-slate-900 shadow-sm">
             {theme === 'light' ? <Moon size={20} className="text-slate-600" /> : <Sun size={20} className="text-yellow-400" />}
-          </button>
-          <button onClick={() => setBackupModalOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-full bg-white dark:bg-slate-900 shadow-sm" title="Backup & Restore">
-            <Download size={18} className="text-slate-500" />
           </button>
           <button
             onClick={onSignOut}
@@ -271,321 +269,275 @@ export default function AdminView({ profiles, drills, goals, history, theme, adm
         </div>
       </header>
 
-      {/* Kids Overview */}
-      {kidProfiles.length > 0 && (
-        <section className="mb-6">
-          <h3 className="text-lg font-bold mb-4 dark:text-slate-100">Kids Overview</h3>
-          <div className={cn(
-            'grid gap-4',
-            kidProfiles.length === 1 ? 'grid-cols-1 max-w-sm' :
-            kidProfiles.length === 2 ? 'sm:grid-cols-2' :
-            'sm:grid-cols-2 lg:grid-cols-3'
-          )}>
-            {kidProfiles.map(p => (
-              <KidProgressCard
-                key={p.id}
-                profile={p}
-                goals={goals}
-                history={history}
-                allProfiles={profiles}
-                onEdit={() => { setEditingProfile(p); setEditProfileOpen(true); }}
-              />
-            ))}
-          </div>
-        </section>
-      )}
+      {/* ── Overview: kids + their quests ── */}
+      <section className="mb-10">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-xl font-black dark:text-slate-100">Overview</h2>
+          <button
+            onClick={() => setAddProfileOpen(true)}
+            className="flex items-center gap-2 rounded-full bg-slate-800 dark:bg-slate-700 px-3 py-1.5 text-xs font-black text-white active:scale-95"
+          >
+            <Plus size={14} /> Add Kid
+          </button>
+        </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Kid Profiles */}
-        <section className="space-y-4 lg:col-span-1">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold">Kid Profiles</h3>
-            <div className="flex gap-2">
-              <button
-                onClick={() => openCreateGoal(true)}
-                className="flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-[10px] font-bold text-[#FF6321] uppercase transition-all hover:bg-orange-100"
-              >
-                <Users size={12} />+ Team Goal
-              </button>
-              <button onClick={() => setAddProfileOpen(true)} className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-white active:scale-90">
-                <Plus size={16} />
-              </button>
-            </div>
-          </div>
-          <div className="grid gap-3">
-            {kidProfiles.map(p => {
-              const streak = calcStreak(p.id, history, profiles);
-              return (
-                <div key={p.id} className="flex items-center justify-between rounded-2xl bg-white dark:bg-slate-900 p-4 shadow-sm">
-                  <div>
-                    <p className="font-bold dark:text-slate-100">{p.name}</p>
-                    <p className="text-xs text-[#9E9E9E] dark:text-slate-500 uppercase font-bold tracking-tight">
-                      {p.sport} • {p.drillsPerDay}/day {streak > 0 && `• 🔥 ${streak} streak`}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => { setEditingProfile(p); setEditProfileOpen(true); }}
-                    className="text-sm font-bold text-blue-600 hover:underline"
-                  >
-                    Edit
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </section>
+        <div className="space-y-8">
+          {kidProfiles.map(p => {
+            const kidGoals = goals.filter(g => g.profileId === p.id);
+            return (
+              <div key={p.id}>
+                {/* Progress card */}
+                <KidProgressCard
+                  profile={p}
+                  goals={goals}
+                  history={history}
+                  allProfiles={profiles}
+                  onEdit={() => { setEditingProfile(p); setEditProfileOpen(true); }}
+                />
 
-        {/* Today's Activity */}
-        <section className="space-y-4 lg:col-span-1">
-          <h3 className="text-lg font-bold flex items-center gap-2">
-            Today's Activity
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#FF6321] text-[10px] text-white font-black">
-              {todayActivity.length}
-            </span>
-          </h3>
-          <div className="grid gap-3">
-            {todayActivity.map(log => {
-              const profile = profiles.find(p => p.id === log.profileId);
-              return (
-                <div key={log.id} className="rounded-2xl border-l-4 border-l-green-500 bg-white dark:bg-slate-900 p-4 shadow-sm">
-                  <p className="text-sm font-bold dark:text-slate-100">{profile?.name} — {log.completedDrillIds.length} drills done</p>
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {log.completedDrillIds.map(id => {
-                      const d = drills.find(x => x.id === id);
-                      return d ? <span key={id} className="text-[9px] font-bold bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded">{d.title}</span> : null;
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-            {todayActivity.length === 0 && <p className="text-sm text-slate-400 italic">No activity yet today.</p>}
-          </div>
-        </section>
-
-        {/* Drill Library */}
-        <section className="space-y-4 lg:col-span-1">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold dark:text-slate-100">Drill Library</h3>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setAiModalOpen(true)}
-                className="flex items-center gap-1.5 rounded-full bg-slate-800 dark:bg-slate-700 px-3 py-1.5 text-[10px] font-black text-white uppercase tracking-wide active:scale-90 shadow-md"
-                title="Generate drills with AI"
-              >
-                ✨ AI
-              </button>
-              <button onClick={openAddDrill} className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FF6321] text-white active:scale-90 shadow-md">
-                <Plus size={16} />
-              </button>
-            </div>
-          </div>
-          <div className="grid gap-3">
-            {DRILL_CATEGORIES.map(cat => {
-              const catDrills = getCategoryDrills(cat.id);
-              const isOpen = expandedCategories.includes(cat.id);
-              return (
-                <div key={cat.id} className="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800">
-                  <button onClick={() => toggleCategory(cat.id)} className="flex w-full items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800">{cat.icon}</div>
-                      <div className="text-left">
-                        <p className="font-bold dark:text-slate-100">{cat.label}</p>
-                        <p className="text-xs text-slate-400">{catDrills.length} Drills</p>
-                      </div>
-                    </div>
-                    <ChevronDown className={cn('text-slate-300 transition-transform duration-300', isOpen && 'rotate-180')} />
-                  </button>
-                  <AnimatePresence>
-                    {isOpen && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="border-t border-slate-50 dark:border-slate-800"
-                      >
-                        <div className="p-3 space-y-2 max-h-[400px] overflow-y-auto">
-                          {catDrills.map(drill => (
-                            <AdminDrillCard key={drill.id} drill={drill} onDelete={deleteDrill} onEdit={openEditDrill} />
-                          ))}
-                          {catDrills.length === 0 && <p className="py-8 text-center text-sm text-slate-400 italic">No drills yet.</p>}
+                {/* Kid's quests inline */}
+                <div className="mt-3 space-y-2 pl-1">
+                  {kidGoals.map(g => {
+                    const maxTarget = g.milestones.length > 0 ? Math.max(...g.milestones.map(m => m.target)) : 1;
+                    const pct = Math.min(100, (g.currentValue / maxTarget) * 100);
+                    const nextMilestone = g.milestones.find(m => !m.isAchieved);
+                    return (
+                      <div key={g.id} className="flex items-center gap-3 rounded-2xl bg-white dark:bg-slate-900 px-4 py-3 shadow-sm">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2 mb-1.5">
+                            <p className="font-bold text-sm dark:text-slate-100 truncate">{g.title}</p>
+                            <span className="text-[10px] font-black text-slate-400 shrink-0">
+                              {g.currentValue}/{maxTarget} {g.type === 'streak' ? 'days' : 'drills'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                              <div className="h-full bg-blue-400 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                            </div>
+                            {nextMilestone && (
+                              <span className="text-[9px] text-slate-400 shrink-0">🎁 {nextMilestone.reward}</span>
+                            )}
+                          </div>
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* Notifications */}
-        <section className="space-y-4 lg:col-span-3">
-          <h3 className="text-lg font-bold dark:text-slate-100">Notifications</h3>
-          <div className="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-6">
-              {/* Toggle */}
-              <div className="flex items-center justify-between gap-4 flex-1">
-                <div>
-                  <p className="font-bold dark:text-slate-100">Daily drill reminders</p>
-                  <p className="text-xs text-slate-400">Kids get notified at the time below</p>
-                </div>
-                <button
-                  onClick={() => updateNotificationSettings({ enabled: !notificationEnabled })}
-                  className={cn(
-                    'relative inline-flex h-6 w-11 shrink-0 rounded-full transition-colors duration-200',
-                    notificationEnabled ? 'bg-[#FF6321]' : 'bg-slate-200 dark:bg-slate-700'
-                  )}
-                >
-                  <span className={cn(
-                    'inline-block h-5 w-5 rounded-full bg-white shadow translate-y-0.5 transition-transform duration-200',
-                    notificationEnabled ? 'translate-x-5' : 'translate-x-0.5'
-                  )} />
-                </button>
-              </div>
-
-              {/* Time picker */}
-              <div className="flex items-center gap-3">
-                <div>
-                  <p className="text-xs font-bold uppercase text-[#9E9E9E] mb-1">Reminder time (CT)</p>
-                  <input
-                    type="time"
-                    value={notificationTime}
-                    onChange={e => updateNotificationSettings({ time: e.target.value })}
-                    disabled={!notificationEnabled}
-                    className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm font-bold outline-none focus:border-[#FF6321] disabled:opacity-40"
-                  />
-                </div>
-              </div>
-
-              {/* Subscribe this device */}
-              <div className="flex flex-col gap-1">
-                <p className="text-xs font-bold uppercase text-[#9E9E9E]">This device</p>
-                {notifSubscribed ? (
-                  <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                    <span className="text-lg">✓</span>
-                    <span className="text-sm font-bold">Notifications on</span>
-                  </div>
-                ) : (
+                        <div className="flex gap-1 shrink-0">
+                          <button
+                            onClick={() => { setEditingGoal(g); setEditGoalOpen(true); }}
+                            className="rounded-lg bg-slate-50 dark:bg-slate-800 px-2.5 py-1.5 text-[10px] font-bold text-slate-400 hover:text-slate-600 transition-colors"
+                          >Edit</button>
+                          <button
+                            onClick={() => { if (confirm('Delete this quest?')) deleteGoal(g.id); }}
+                            className="rounded-lg px-2 py-1.5 text-slate-300 hover:text-red-400 transition-colors font-bold"
+                          >×</button>
+                        </div>
+                      </div>
+                    );
+                  })}
                   <button
-                    onClick={async () => {
-                      const adminProfile = profiles.find(p => p.role === 'admin');
-                      if (!adminProfile) return;
-                      const ok = await subscribeToNotifications(adminProfile.id);
-                      if (ok) { setNotifSubscribed(true); showNotification('Notifications enabled! 🔔'); }
-                      else showNotification('Could not enable — check browser settings.', true);
-                    }}
-                    className="rounded-xl bg-slate-800 dark:bg-slate-700 px-4 py-2 text-xs font-black text-white active:scale-95"
+                    onClick={() => { setGoalForm({ type: 'total_drills', milestones: [], profileId: p.id }); setCreateGoalOpen(true); }}
+                    className="w-full rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 py-2 text-[11px] font-black text-slate-400 uppercase tracking-wide hover:border-[#FF6321] hover:text-[#FF6321] transition-all"
                   >
-                    🔔 Enable on this device
+                    + Add Quest for {p.name}
                   </button>
-                )}
-                {!notifSubscribed && (
-                  <p className="text-[10px] text-slate-400">Requires iOS 16.4+ with app added to Home Screen</p>
-                )}
+                </div>
               </div>
-            </div>
-          </div>
-        </section>
+            );
+          })}
 
-        {/* Device Assignment */}
-        <section className="space-y-4 lg:col-span-3">
-          <h3 className="text-lg font-bold dark:text-slate-100">This Device</h3>
-          <div className="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm">
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-              Assign a kid to this device so they skip the profile selection and go straight to their PIN entry.
-            </p>
+          {/* Team Goals */}
+          {(() => {
+            const teamGoals = goals.filter(g => g.isTeam);
+            return (
+              <div>
+                <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3">Team Goals</h3>
+                <div className="space-y-2">
+                  {teamGoals.map(g => {
+                    const maxTarget = g.milestones.length > 0 ? Math.max(...g.milestones.map(m => m.target)) : 1;
+                    const pct = Math.min(100, (g.currentValue / maxTarget) * 100);
+                    const nextMilestone = g.milestones.find(m => !m.isAchieved);
+                    return (
+                      <div key={g.id} className="flex items-center gap-3 rounded-2xl bg-[#FF6321]/10 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-900/30 px-4 py-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2 mb-1.5">
+                            <p className="font-bold text-sm text-[#FF6321] truncate">{g.title}</p>
+                            <span className="text-[10px] font-black text-slate-400 shrink-0">{g.currentValue}/{maxTarget} drills</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-1.5 bg-orange-100 dark:bg-orange-950/40 rounded-full overflow-hidden">
+                              <div className="h-full bg-[#FF6321] rounded-full transition-all" style={{ width: `${pct}%` }} />
+                            </div>
+                            {nextMilestone && (
+                              <span className="text-[9px] text-slate-400 shrink-0">🎁 {nextMilestone.reward}</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex gap-1 shrink-0">
+                          <button onClick={() => { setEditingGoal(g); setEditGoalOpen(true); }} className="rounded-lg bg-white/50 dark:bg-slate-800 px-2.5 py-1.5 text-[10px] font-bold text-slate-500 hover:text-slate-700 transition-colors">Edit</button>
+                          <button onClick={() => { if (confirm('Delete this quest?')) deleteGoal(g.id); }} className="rounded-lg px-2 py-1.5 text-slate-300 hover:text-red-400 transition-colors font-bold">×</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <button
+                    onClick={() => openCreateGoal(true)}
+                    className="w-full rounded-2xl border-2 border-dashed border-orange-200 dark:border-orange-900/30 py-2 text-[11px] font-black text-slate-400 uppercase tracking-wide hover:border-[#FF6321] hover:text-[#FF6321] transition-all"
+                  >
+                    + Add Team Goal
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      </section>
+
+      {/* ── Drill Library ── */}
+      <section className="mb-10">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-xl font-black dark:text-slate-100">Drill Library</h2>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setAiModalOpen(true)}
+              className="flex items-center gap-1.5 rounded-full bg-slate-800 dark:bg-slate-700 px-3 py-1.5 text-[10px] font-black text-white uppercase tracking-wide active:scale-90 shadow-md"
+            >
+              ✨ AI
+            </button>
+            <button onClick={openAddDrill} className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FF6321] text-white active:scale-90 shadow-md">
+              <Plus size={16} />
+            </button>
+          </div>
+        </div>
+        <div className="grid gap-3">
+          {DRILL_CATEGORIES.map(cat => {
+            const catDrills = getCategoryDrills(cat.id);
+            const isOpen = expandedCategories.includes(cat.id);
+            return (
+              <div key={cat.id} className="overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800">
+                <button onClick={() => toggleCategory(cat.id)} className="flex w-full items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800">{cat.icon}</div>
+                    <div className="text-left">
+                      <p className="font-bold dark:text-slate-100">{cat.label}</p>
+                      <p className="text-xs text-slate-400">{catDrills.length} Drills</p>
+                    </div>
+                  </div>
+                  <ChevronDown className={cn('text-slate-300 transition-transform duration-300', isOpen && 'rotate-180')} />
+                </button>
+                <AnimatePresence>
+                  {isOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="border-t border-slate-50 dark:border-slate-800"
+                    >
+                      <div className="p-3 space-y-2 max-h-[400px] overflow-y-auto">
+                        {catDrills.map(drill => (
+                          <AdminDrillCard key={drill.id} drill={drill} onDelete={deleteDrill} onEdit={openEditDrill} />
+                        ))}
+                        {catDrills.length === 0 && <p className="py-8 text-center text-sm text-slate-400 italic">No drills yet.</p>}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ── Settings ── */}
+      <section>
+        <h2 className="text-xl font-black dark:text-slate-100 mb-5">Settings</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+
+          {/* Notifications */}
+          <div className="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-bold dark:text-slate-100">Notifications</p>
+                <p className="text-xs text-slate-400">Daily drill reminders</p>
+              </div>
+              <button
+                onClick={() => updateNotificationSettings({ enabled: !notificationEnabled })}
+                className={cn('relative inline-flex h-6 w-11 shrink-0 rounded-full transition-colors duration-200', notificationEnabled ? 'bg-[#FF6321]' : 'bg-slate-200 dark:bg-slate-700')}
+              >
+                <span className={cn('inline-block h-5 w-5 rounded-full bg-white shadow translate-y-0.5 transition-transform duration-200', notificationEnabled ? 'translate-x-5' : 'translate-x-0.5')} />
+              </button>
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase text-[#9E9E9E] mb-1">Time (CT) — fires daily</p>
+              <input
+                type="time" value={notificationTime}
+                onChange={e => updateNotificationSettings({ time: e.target.value })}
+                disabled={!notificationEnabled}
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-slate-100 px-3 py-2 text-sm font-bold outline-none focus:border-[#FF6321] disabled:opacity-40"
+              />
+              <p className="text-[10px] text-slate-400 mt-1">Exact time requires Vercel Pro</p>
+            </div>
+            {notifSubscribed ? (
+              <div className="flex items-center gap-2 text-green-600 dark:text-green-400 text-sm font-bold">✓ Enabled on this device</div>
+            ) : (
+              <button
+                onClick={async () => {
+                  const adminProfile = profiles.find(p => p.role === 'admin');
+                  if (!adminProfile) return;
+                  const ok = await subscribeToNotifications(adminProfile.id);
+                  if (ok) { setNotifSubscribed(true); showNotification('Notifications enabled! 🔔'); }
+                  else showNotification('Could not enable — check browser settings.', true);
+                }}
+                className="w-full rounded-xl bg-slate-800 dark:bg-slate-700 py-2 text-xs font-black text-white active:scale-95"
+              >
+                🔔 Enable on this device
+              </button>
+            )}
+          </div>
+
+          {/* Device Assignment */}
+          <div className="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm space-y-4">
+            <div>
+              <p className="font-bold dark:text-slate-100">This Device</p>
+              <p className="text-xs text-slate-400">Assign a kid — they skip straight to PIN</p>
+            </div>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => assignDevice('')}
-                className={cn(
-                  'rounded-xl px-4 py-2 text-sm font-black transition-all',
-                  !deviceProfileId ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200'
-                )}
+                className={cn('rounded-xl px-3 py-1.5 text-xs font-black transition-all', !deviceProfileId ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900' : 'bg-slate-100 dark:bg-slate-800 text-slate-500')}
               >
                 Not assigned
               </button>
               {kidProfiles.map(p => (
-                <button
-                  key={p.id}
-                  onClick={() => assignDevice(p.id)}
-                  className={cn(
-                    'rounded-xl px-4 py-2 text-sm font-black transition-all',
-                    deviceProfileId === p.id ? 'bg-[#FF6321] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'
-                  )}
+                <button key={p.id} onClick={() => assignDevice(p.id)}
+                  className={cn('rounded-xl px-3 py-1.5 text-xs font-black transition-all', deviceProfileId === p.id ? 'bg-[#FF6321] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500')}
                 >
-                  {p.name}'s device
+                  {p.name}
                 </button>
               ))}
             </div>
           </div>
-        </section>
 
-        {/* Active Quests */}
-        <section className="space-y-4 lg:col-span-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold">Active Quests</h3>
-            <button onClick={() => openCreateGoal(false)} className="flex items-center gap-2 rounded-full bg-[#FF6321] px-4 py-2 text-sm font-bold text-white shadow-lg active:scale-95">
-              <Plus size={16} /><span>New Quest</span>
+          {/* Backup & Restore */}
+          <div className="rounded-2xl bg-white dark:bg-slate-900 p-5 shadow-sm space-y-4">
+            <div>
+              <p className="font-bold dark:text-slate-100">Backup & Restore</p>
+              <p className="text-xs text-slate-400">Export or import all data as JSON</p>
+            </div>
+            <button onClick={exportData} className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#FF6321] py-2.5 text-xs font-black text-white active:scale-95">
+              <Download size={14} /> Download Backup
             </button>
+            <label className="w-full flex items-center justify-center gap-2 cursor-pointer rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 py-2.5 text-xs font-black text-slate-400 hover:border-[#FF6321] hover:text-[#FF6321] transition-all">
+              <Upload size={14} /> Restore from File
+              <input type="file" accept=".json" className="hidden" onChange={e => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = ev => { importData(ev.target?.result as string); };
+                reader.readAsText(file);
+                e.target.value = '';
+              }} />
+            </label>
           </div>
-          <div className="grid gap-4 sm:grid-cols-3">
-            {goals.map(g => {
-              const profile = profiles.find(p => p.id === g.profileId);
-              const maxTarget = g.milestones.length > 0 ? Math.max(...g.milestones.map(m => m.target)) : 100;
-              const pct = Math.min(100, (g.currentValue / maxTarget) * 100);
-              return (
-                <div key={g.id} className={cn('rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-sm border transition-all relative overflow-hidden', g.isTeam ? 'border-orange-200 dark:border-orange-950/30' : 'border-transparent')}>
-                  {g.isTeam && (
-                    <div className="absolute top-0 right-0 bg-[#FF6321] text-white px-3 py-1 rounded-bl-xl text-[8px] font-black uppercase tracking-widest flex items-center gap-1">
-                      <Users size={10} />Team Goal
-                    </div>
-                  )}
-                  <div className="mb-4 flex items-center justify-between">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-[#9E9E9E] dark:text-slate-500 uppercase tracking-wider truncate">
-                        {g.isTeam ? 'Entire Team' : profile?.name} • {g.type.replace('_', ' ')}
-                      </p>
-                      <h4 className="font-black text-[#FF6321] text-lg truncate">{g.title}</h4>
-                    </div>
-                    <RadialProgress progress={pct} size={56} strokeWidth={6} />
-                  </div>
-                  <div className="mb-3">
-                    <div className="flex justify-between items-end mb-1.5">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">Progress</span>
-                      <span className="text-[10px] font-black text-[#FF6321]">{g.currentValue} / {maxTarget}</span>
-                    </div>
-                    <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                      <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} className={cn('h-full rounded-full', g.isTeam ? 'bg-orange-500' : 'bg-blue-500')} />
-                    </div>
-                  </div>
-                  <div className="mb-4 space-y-1">
-                    {g.milestones.sort((a, b) => a.target - b.target).slice(0, 3).map(m => (
-                      <div key={m.id} className="flex items-center justify-between text-[10px]">
-                        <span className={m.isAchieved ? 'text-green-600 dark:text-green-500 font-bold' : 'text-slate-400'}>{m.reward}</span>
-                        <span className="text-slate-300 dark:text-slate-700 font-mono font-bold">{m.target}</span>
-                      </div>
-                    ))}
-                    {g.milestones.length > 3 && <p className="text-[9px] text-slate-300 text-center font-bold">+{g.milestones.length - 3} more</p>}
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => { setEditingGoal(g); setEditGoalOpen(true); }} className="flex-1 rounded-xl bg-slate-50 dark:bg-slate-800 py-2 text-[10px] font-bold text-slate-400 hover:text-slate-600 hover:bg-slate-100 uppercase tracking-widest transition-all">
-                      Edit
-                    </button>
-                    <button onClick={() => { if (confirm('Delete this quest?')) deleteGoal(g.id); }} className="rounded-xl border border-slate-100 dark:border-slate-800 px-3 py-2 text-[10px] font-bold text-slate-300 hover:text-red-400 hover:border-red-100 transition-all">
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-            {goals.length === 0 && (
-              <div className="col-span-full py-12 text-center rounded-3xl border-2 border-dashed border-slate-100 dark:border-slate-800">
-                <p className="text-slate-400">No active quests. Create one to motivate the kids!</p>
-              </div>
-            )}
-          </div>
-        </section>
-      </div>
+        </div>
+      </section>
 
       {/* ── Modals ── */}
 
