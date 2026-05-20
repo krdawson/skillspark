@@ -260,7 +260,7 @@ export default function AdminView({ profiles, drills, goals, history, theme, adm
 
   function getCategoryDrills(catId: string) {
     if (catId === 'conditioning') return drills.filter(d => d.type === 'conditioning' || d.type === 'strength');
-    return drills.filter(d => d.sports.includes(catId as Sport));
+    return drills.filter(d => d.type === 'sport-specific' && d.sports.includes(catId as Sport));
   }
 
   return (
