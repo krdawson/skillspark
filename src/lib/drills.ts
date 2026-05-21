@@ -27,6 +27,30 @@ function weightedSeededShuffle<T>(items: T[], weights: number[], seed: number): 
   return scored.sort((a, b) => b.score - a.score).map(s => s.item);
 }
 
+// ── Drill weighting ───────────────────────────────────────────────────────────
+// Weights control how often a drill appears in a kid's daily rotation.
+// Unrated drills always get 1.0 (baseline) so new drills get fair exposure.
+//
+// Two independent factors are multiplied together:
+//
+// LIKED factor   (avgLiked = 0–1, where 1 = always thumbs-up)
+//   Formula : 0.4 + avgLiked * 1.2
+//   Range   : 0.4 (always 👎) → 1.6 (always 👍)
+//
+// DIFFICULTY factor   (avgDiff = 1–3, where 3 = always Hard)
+//   Formula : 0.8 + (avgDiff - 1) * 0.3
+//   Range   : 0.8 (always Easy) → 1.4 (always Hard)
+//
+// Combined examples:
+//   👍 + Hard   → 1.6 × 1.4 = 2.24  (shows up most)
+//   👍 + Medium → 1.6 × 1.1 = 1.76
+//   👍 + Easy   → 1.6 × 0.8 = 1.28
+//   No rating   → 1.0 (baseline)
+//   👎 + Hard   → 0.4 × 1.4 = 0.56
+//   👎 + Easy   → 0.4 × 0.8 = 0.32  (shows up least, never hidden)
+//
+// To adjust: tweak the constants in likedW / diffW below.
+// ─────────────────────────────────────────────────────────────────────────────
 function getDrillWeight(ratings: DrillRating[], drillId: string): number {
   const hits = ratings.filter(r => r.drillId === drillId);
   if (!hits.length) return 1.0;
@@ -34,9 +58,7 @@ function getDrillWeight(ratings: DrillRating[], drillId: string): number {
   const avgLiked = hits.reduce((s, r) => s + (r.liked ? 1 : 0), 0) / hits.length;
   const avgDiff  = hits.reduce((s, r) => s + r.difficulty, 0) / hits.length;
 
-  // liked range: 0.4 (always disliked) → 1.6 (always liked)
   const likedW = 0.4 + avgLiked * 1.2;
-  // difficulty range: 0.8 (always easy) → 1.4 (always hard)
   const diffW  = 0.8 + (avgDiff - 1) * 0.3;
 
   return likedW * diffW;
