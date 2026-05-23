@@ -23,6 +23,7 @@ export default function DrillCard({ drill, isDone, onToggle, onRate }: Props) {
   const [showRating, setShowRating] = useState(false);
   const [liked, setLiked] = useState<boolean | null>(null);
   const [difficulty, setDifficulty] = useState<1 | 2 | 3 | null>(null);
+  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     const justCompleted = !prevIsDone.current && isDone && !wasInitiallyDone.current;
@@ -32,11 +33,13 @@ export default function DrillCard({ drill, isDone, onToggle, onRate }: Props) {
       setShowRating(true);
       setLiked(null);
       setDifficulty(null);
+      setSubmitted(false);
     }
     if (justUnchecked) {
       setShowRating(false);
       setLiked(null);
       setDifficulty(null);
+      setSubmitted(false);
       wasInitiallyDone.current = false;
     }
     prevIsDone.current = isDone;
@@ -54,7 +57,16 @@ export default function DrillCard({ drill, isDone, onToggle, onRate }: Props) {
 
   function submit(l: boolean, d: 1 | 2 | 3) {
     onRate(l, d);
+    setSubmitted(true);
+    setTimeout(() => setShowRating(false), 600);
+  }
+
+  function skipRating() {
     setShowRating(false);
+    setLiked(null);
+    setDifficulty(null);
+    setSubmitted(false);
+    wasInitiallyDone.current = true;
   }
 
   return (
@@ -62,10 +74,9 @@ export default function DrillCard({ drill, isDone, onToggle, onRate }: Props) {
       'rounded-2xl bg-white dark:bg-slate-900 shadow-sm transition-all overflow-hidden',
       isDone && !showRating && 'opacity-60'
     )}>
-      {/* Main drill row — not a button while rating is open */}
+      {/* Main drill row — always toggleable, even while rating is open (uncheck closes the panel) */}
       <button
-        onClick={showRating ? undefined : onToggle}
-        disabled={showRating}
+        onClick={onToggle}
         className="w-full p-5 text-left"
       >
         <div className="flex items-start justify-between">
@@ -109,58 +120,72 @@ export default function DrillCard({ drill, isDone, onToggle, onRate }: Props) {
             className="border-t border-slate-100 dark:border-slate-800 overflow-hidden"
           >
             <div className="px-5 py-4 space-y-3 bg-slate-50 dark:bg-slate-800/50">
-              <p className="text-xs font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
-                Rate this drill
-              </p>
+              {submitted ? (
+                <p className="text-center text-sm font-black text-green-500 py-2">Rated! ✓</p>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                      Rate this drill
+                    </p>
+                    <button
+                      onClick={skipRating}
+                      className="text-xs text-slate-400 dark:text-slate-500 underline"
+                    >
+                      skip
+                    </button>
+                  </div>
 
-              {/* Liked row */}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => pickLiked(true)}
-                  className={cn(
-                    'flex-1 rounded-xl py-2.5 text-sm font-black transition-all',
-                    liked === true
-                      ? 'bg-green-500 text-white scale-105'
-                      : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                  {/* Liked row */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => pickLiked(true)}
+                      className={cn(
+                        'flex-1 rounded-xl py-2.5 text-sm font-black transition-all',
+                        liked === true
+                          ? 'bg-green-500 text-white scale-105'
+                          : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                      )}
+                    >
+                      👍 Liked it
+                    </button>
+                    <button
+                      onClick={() => pickLiked(false)}
+                      className={cn(
+                        'flex-1 rounded-xl py-2.5 text-sm font-black transition-all',
+                        liked === false
+                          ? 'bg-red-500 text-white scale-105'
+                          : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                      )}
+                    >
+                      👎 Not for me
+                    </button>
+                  </div>
+
+                  {/* Difficulty row */}
+                  <div className="flex gap-2">
+                    {DIFFICULTY_OPTS.map(opt => (
+                      <button
+                        key={opt.value}
+                        onClick={() => pickDifficulty(opt.value)}
+                        className={cn(
+                          'flex-1 rounded-xl py-2.5 text-xs font-black transition-all',
+                          difficulty === opt.value
+                            ? 'bg-[#FF6321] text-white scale-105'
+                            : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                        )}
+                      >
+                        {opt.emoji} {opt.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {(liked !== null || difficulty !== null) && (
+                    <p className="text-center text-[10px] text-slate-400">
+                      {liked === null ? 'Pick 👍 or 👎 to finish' : difficulty === null ? 'Pick a difficulty to finish' : ''}
+                    </p>
                   )}
-                >
-                  👍 Liked it
-                </button>
-                <button
-                  onClick={() => pickLiked(false)}
-                  className={cn(
-                    'flex-1 rounded-xl py-2.5 text-sm font-black transition-all',
-                    liked === false
-                      ? 'bg-red-500 text-white scale-105'
-                      : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
-                  )}
-                >
-                  👎 Not for me
-                </button>
-              </div>
-
-              {/* Difficulty row */}
-              <div className="flex gap-2">
-                {DIFFICULTY_OPTS.map(opt => (
-                  <button
-                    key={opt.value}
-                    onClick={() => pickDifficulty(opt.value)}
-                    className={cn(
-                      'flex-1 rounded-xl py-2.5 text-xs font-black transition-all',
-                      difficulty === opt.value
-                        ? 'bg-[#FF6321] text-white scale-105'
-                        : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
-                    )}
-                  >
-                    {opt.emoji} {opt.label}
-                  </button>
-                ))}
-              </div>
-
-              {(liked !== null || difficulty !== null) && (
-                <p className="text-center text-[10px] text-slate-400">
-                  {liked === null ? 'Pick 👍 or 👎 to finish' : difficulty === null ? 'Pick a difficulty to finish' : ''}
-                </p>
+                </>
               )}
             </div>
           </motion.div>

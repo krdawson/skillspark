@@ -91,11 +91,15 @@ export function useAppState() {
           if (idx > -1) { const next = [...prev]; next[idx] = updated; return next; }
           return [...prev, updated];
         });
-        // Keep dailyCompleted in sync for today
+        // Rebuild dailyCompleted for today from the authoritative log (handles unchecks too)
         const today = format(new Date(), 'yyyy-MM-dd');
         if (updated.date === today) {
           setDailyCompleted(prev => {
             const next = { ...prev };
+            // Clear all keys for this profile+today, then re-add only what's in the log
+            Object.keys(next).forEach(k => {
+              if (k.startsWith(`${updated.profileId}-`)) delete next[k];
+            });
             updated.completedDrillIds.forEach(id => { next[`${updated.profileId}-${id}`] = true; });
             return next;
           });
@@ -348,19 +352,23 @@ export function useAppState() {
     ;(async () => {
       try {
         if (existingLog) {
-          await supabase.from('daily_logs')
+          const { error } = await supabase.from('daily_logs')
             .update({ completed_drill_ids: newLog.completedDrillIds })
             .eq('id', existingLog.id).eq('family_id', FAMILY_ID);
+          if (error) console.error('[toggleDrill] log update failed:', error);
         } else if (isDone) {
-          await supabase.from('daily_logs').insert(fromLog(newLog));
+          const { error } = await supabase.from('daily_logs').insert(fromLog(newLog));
+          if (error) console.error('[toggleDrill] log insert failed:', error);
         }
         const changedGoals = newGoals.filter(g => goals.find(og => og.id === g.id)?.currentValue !== g.currentValue);
         for (const g of changedGoals) {
-          await supabase.from('goals')
+          const { error } = await supabase.from('goals')
             .update({ current_value: g.currentValue, milestones: g.milestones })
             .eq('id', g.id).eq('family_id', FAMILY_ID);
+          if (error) console.error('[toggleDrill] goal update failed:', error, g);
         }
-        await supabase.from('profiles').update({ xp: newXP }).eq('id', profile.id).eq('family_id', FAMILY_ID);
+        const { error: xpError } = await supabase.from('profiles').update({ xp: newXP }).eq('id', profile.id).eq('family_id', FAMILY_ID);
+        if (xpError) console.error('[toggleDrill] xp update failed:', xpError);
       } catch (err) {
         console.error('[toggleDrill] write failed:', err);
       }
