@@ -37,9 +37,10 @@ export default function KidProgressCard({ profile, goals, history, allProfiles, 
   const profileColor = getProfileColor(profile.color);
   const restDays = new Set(profile.restDays ?? []);
 
+  const totalDrills = (profile.sportDrillsPerDay ?? 3) + (profile.conditioningDrillsPerDay ?? 1);
   const todayLog = history.find(h => h.profileId === profile.id && h.date === today);
   const todayCount = todayLog?.completedDrillIds.length ?? 0;
-  const todayDone = todayCount >= profile.drillsPerDay;
+  const todayDone = todayCount >= totalDrills;
   const todayStarted = todayCount > 0;
 
 
@@ -63,7 +64,7 @@ export default function KidProgressCard({ profile, goals, history, allProfiles, 
               </span>
             </div>
             <p className="text-xs text-slate-400 dark:text-slate-500 font-bold">
-              {SPORT_EMOJI[profile.sport]} {profile.sport} · {profile.drillsPerDay} drills/day
+              {SPORT_EMOJI[profile.sport]} {profile.sport} · {profile.sportDrillsPerDay ?? 3} sport + {profile.conditioningDrillsPerDay ?? 1} S&C/day
             </p>
           </div>
         </div>
@@ -95,14 +96,14 @@ export default function KidProgressCard({ profile, goals, history, allProfiles, 
             {todayDone
               ? 'All done! 🎉'
               : todayStarted
-                ? `${todayCount} of ${profile.drillsPerDay} drills`
+                ? `${todayCount} of ${totalDrills} drills`
                 : 'Not started yet'}
           </p>
         </div>
         {todayDone
           ? <CheckCircle2 size={24} className="text-green-500" />
           : todayStarted
-            ? <div className="text-yellow-500 font-black text-sm">{todayCount}/{profile.drillsPerDay}</div>
+            ? <div className="text-yellow-500 font-black text-sm">{todayCount}/{totalDrills}</div>
             : <Circle size={24} className="text-slate-300 dark:text-slate-600" />
         }
       </div>
@@ -114,7 +115,7 @@ export default function KidProgressCard({ profile, goals, history, allProfiles, 
           {weekDays.map(day => {
             const log = history.find(h => h.profileId === profile.id && h.date === day);
             const count = log?.completedDrillIds.length ?? 0;
-            const full = count >= profile.drillsPerDay;
+            const full = count >= totalDrills;
             const partial = count > 0 && !full;
             const isRestDay = restDays.has(day);
             const isToday = day === today;

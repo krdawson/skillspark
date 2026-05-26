@@ -65,32 +65,41 @@ function getDrillWeight(ratings: DrillRating[], drillId: string): number {
 }
 
 export function getDailyDrills(drills: Drill[], profile: Profile, date: string, ratings: DrillRating[] = []): Drill[] {
-  const sportDrills = drills.filter(d => {
+  const sportCount = profile.sportDrillsPerDay ?? 3;
+  const condCount = profile.conditioningDrillsPerDay ?? 1;
+
+  const sportPool = drills.filter(d => {
     if (d.type !== 'sport-specific') return false;
     if (profile.sport === 'both') return true;
     return d.sports.includes(profile.sport as 'soccer' | 'lacrosse');
   });
 
-  const conditioningDrills = drills.filter(d =>
+  const condPool = drills.filter(d =>
     d.type === 'conditioning' || d.type === 'strength'
   );
 
-  const eligible = [...sportDrills, ...conditioningDrills];
   const seed = stringToSeed(`${date}-${profile.id}`);
 
-  if (!ratings.length) {
-    // No ratings yet — plain seeded shuffle
-    const rng = makeLCG(seed);
-    const result = [...eligible];
-    for (let i = result.length - 1; i > 0; i--) {
-      const j = Math.floor(rng() * (i + 1));
-      [result[i], result[j]] = [result[j], result[i]];
+  function pickFromPool(pool: Drill[], count: number, seedOffset: number): Drill[] {
+    if (!pool.length || count <= 0) return [];
+    const s = seed + seedOffset;
+    if (!ratings.length) {
+      const rng = makeLCG(s);
+      const result = [...pool];
+      for (let i = result.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [result[i], result[j]] = [result[j], result[i]];
+      }
+      return result.slice(0, count);
     }
-    return result.slice(0, profile.drillsPerDay);
+    const weights = pool.map(d => getDrillWeight(ratings, d.id));
+    return weightedSeededShuffle(pool, weights, s).slice(0, count);
   }
 
-  const weights = eligible.map(d => getDrillWeight(ratings, d.id));
-  return weightedSeededShuffle(eligible, weights, seed).slice(0, profile.drillsPerDay);
+  return [
+    ...pickFromPool(sportPool, sportCount, 0),
+    ...pickFromPool(condPool, condCount, 1),
+  ];
 }
 
 export function getTodaysDrills(drills: Drill[], profile: Profile, ratings: DrillRating[] = []): Drill[] {

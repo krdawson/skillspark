@@ -22,7 +22,7 @@ export function calculateStreak(profileId: string, history: DailyLog[], profiles
   // Days where the drill goal was met
   const completedDays = new Set(
     history
-      .filter(h => h.profileId === profileId && h.completedDrillIds.length >= profile.drillsPerDay)
+      .filter(h => h.profileId === profileId && h.completedDrillIds.length >= (profile.sportDrillsPerDay ?? 3) + (profile.conditioningDrillsPerDay ?? 1))
       .map(h => h.date)
   );
 

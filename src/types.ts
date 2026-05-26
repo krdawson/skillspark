@@ -6,7 +6,8 @@ export interface Profile {
   name: string;
   role: 'kid' | 'admin';
   sport: Sport;
-  drillsPerDay: number;
+  sportDrillsPerDay: number;
+  conditioningDrillsPerDay: number;
   pin?: string;
   xp?: number;
   badges?: string[];

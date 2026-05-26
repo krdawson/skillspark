@@ -10,9 +10,9 @@ import { supabase, FAMILY_ID, toProfile, toDrill, toGoal, toLog, toRating, fromP
 // ── Default seed data ───────────────────────────────────────────────────────
 
 const DEFAULT_PROFILES: Profile[] = [
-  { id: '1', name: 'Parent',  role: 'admin', sport: 'none',     drillsPerDay: 0 },
-  { id: '2', name: 'Kid 1',   role: 'kid',   sport: 'soccer',   drillsPerDay: 3 },
-  { id: '3', name: 'Kid 2',   role: 'kid',   sport: 'lacrosse', drillsPerDay: 3 },
+  { id: '1', name: 'Parent',  role: 'admin', sport: 'none',     sportDrillsPerDay: 0, conditioningDrillsPerDay: 0 },
+  { id: '2', name: 'Kid 1',   role: 'kid',   sport: 'soccer',   sportDrillsPerDay: 3, conditioningDrillsPerDay: 1 },
+  { id: '3', name: 'Kid 2',   role: 'kid',   sport: 'lacrosse', sportDrillsPerDay: 3, conditioningDrillsPerDay: 1 },
 ];
 
 const DEFAULT_GOALS: Goal[] = [
@@ -333,8 +333,9 @@ export function useAppState() {
     if (milestoneReached) { triggerConfetti(); showNotification('NEW MILESTONE REACHED! 🏆'); }
 
     // Notify parent when kid completes all drills for the day
-    const wasComplete = existingLog ? existingLog.completedDrillIds.length >= profile.drillsPerDay : false;
-    const isNowComplete = isDone && newLog.completedDrillIds.length >= profile.drillsPerDay;
+    const totalDrills = (profile.sportDrillsPerDay ?? 3) + (profile.conditioningDrillsPerDay ?? 1);
+    const wasComplete = existingLog ? existingLog.completedDrillIds.length >= totalDrills : false;
+    const isNowComplete = isDone && newLog.completedDrillIds.length >= totalDrills;
     if (isNowComplete && !wasComplete) {
       fetch('/api/notify', {
         method: 'POST',
@@ -398,8 +399,8 @@ export function useAppState() {
 
   // ── Profile CRUD ──────────────────────────────────────────────────────────
 
-  function addProfile(data: { name: string; sport: Sport; drillsPerDay: number }) {
-    const profile: Profile = { id: Math.random().toString(36).substr(2, 9), name: data.name, role: 'kid', sport: data.sport, drillsPerDay: data.drillsPerDay };
+  function addProfile(data: { name: string; sport: Sport; sportDrillsPerDay: number; conditioningDrillsPerDay: number }) {
+    const profile: Profile = { id: Math.random().toString(36).substr(2, 9), name: data.name, role: 'kid', sport: data.sport, sportDrillsPerDay: data.sportDrillsPerDay, conditioningDrillsPerDay: data.conditioningDrillsPerDay };
     setProfiles(prev => [...prev, profile]);
     supabase.from('profiles').insert(fromProfile(profile)).then();
     showNotification(`Profile for ${profile.name} created!`);

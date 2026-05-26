@@ -7,6 +7,7 @@ import { cn } from '../lib/cn';
 interface Props {
   drill: Drill;
   isDone: boolean;
+  sport?: string;
   onToggle: () => void;
   onRate: (liked: boolean, difficulty: 1 | 2 | 3) => void;
 }
@@ -17,7 +18,7 @@ const DIFFICULTY_OPTS = [
   { value: 3 as const, label: 'Hard',   emoji: '🔥' },
 ];
 
-export default function DrillCard({ drill, isDone, onToggle, onRate }: Props) {
+export default function DrillCard({ drill, isDone, sport, onToggle, onRate }: Props) {
   const wasInitiallyDone = useRef(isDone);
   const prevIsDone = useRef(isDone);
   const [showRating, setShowRating] = useState(false);
@@ -87,7 +88,7 @@ export default function DrillCard({ drill, isDone, onToggle, onRate }: Props) {
               drill.type === 'conditioning'   ? 'bg-green-100 dark:bg-green-950/30 text-green-600 dark:text-green-400' :
                                                 'bg-purple-100 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400'
             )}>
-              {drill.type}
+              {drill.type === 'sport-specific' ? (sport ?? 'sport') : drill.type}
             </span>
             <h4 className={cn('text-lg font-bold dark:text-slate-100', isDone && !showRating && 'line-through opacity-50')}>
               {drill.title}

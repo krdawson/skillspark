@@ -13,7 +13,8 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export const toProfile = (r: any) => ({
   id: r.id, name: r.name, role: r.role, sport: r.sport,
-  drillsPerDay: r.drills_per_day,
+  sportDrillsPerDay: r.drills_per_day ?? 3,
+  conditioningDrillsPerDay: r.conditioning_drills_per_day ?? 1,
   pin: r.pin ?? undefined, xp: r.xp ?? 0, badges: r.badges ?? [],
   color: r.color ?? 'blue',
   restDays: r.rest_days ?? [],
@@ -44,7 +45,9 @@ export const toRating = (r: any) => ({
 
 export const fromProfile = (p: any) => ({
   id: p.id, family_id: FAMILY_ID, name: p.name, role: p.role,
-  sport: p.sport, drills_per_day: p.drillsPerDay,
+  sport: p.sport,
+  drills_per_day: p.sportDrillsPerDay ?? 3,
+  conditioning_drills_per_day: p.conditioningDrillsPerDay ?? 1,
   pin: p.pin ?? null, xp: p.xp ?? 0, badges: p.badges ?? [],
   color: p.color ?? 'blue',
   rest_days: p.restDays ?? [],

@@ -22,7 +22,7 @@ interface Props {
   adminPin: string;
   toggleTheme: () => void;
   showNotification: (msg: string, isError?: boolean) => void;
-  addProfile: (data: { name: string; sport: Sport; drillsPerDay: number }) => void;
+  addProfile: (data: { name: string; sport: Sport; sportDrillsPerDay: number; conditioningDrillsPerDay: number }) => void;
   updateProfile: (profile: Profile) => void;
   addDrill: (data: Omit<Drill, 'id'>) => void;
   updateDrill: (drill: Drill) => void;
@@ -60,7 +60,7 @@ export default function AdminView({ profiles, drills, goals, history, ratings, t
 
   // Profile modals
   const [addProfileOpen, setAddProfileOpen] = useState(false);
-  const [profileForm, setProfileForm] = useState<{ name: string; sport: Sport; drillsPerDay: number }>({ name: '', sport: 'soccer', drillsPerDay: 3 });
+  const [profileForm, setProfileForm] = useState<{ name: string; sport: Sport; sportDrillsPerDay: number; conditioningDrillsPerDay: number }>({ name: '', sport: 'soccer', sportDrillsPerDay: 3, conditioningDrillsPerDay: 1 });
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
 
@@ -161,7 +161,7 @@ export default function AdminView({ profiles, drills, goals, history, ratings, t
     if (!profileForm.name) { showNotification('Name is required.'); return; }
     addProfile(profileForm);
     setAddProfileOpen(false);
-    setProfileForm({ name: '', sport: 'soccer', drillsPerDay: 3 });
+    setProfileForm({ name: '', sport: 'soccer', sportDrillsPerDay: 3, conditioningDrillsPerDay: 1 });
   }
 
   function saveEditProfile() {
@@ -737,19 +737,24 @@ export default function AdminView({ profiles, drills, goals, history, ratings, t
               className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 dark:text-slate-100 p-3 outline-none focus:border-blue-500"
               placeholder="Child's name" />
           </div>
+          <div className="space-y-1">
+            <label className="text-xs font-bold uppercase text-[#9E9E9E]">Sport</label>
+            <select value={profileForm.sport} onChange={e => setProfileForm({ ...profileForm, sport: e.target.value as Sport })}
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 dark:text-slate-100 p-3 outline-none">
+              <option value="soccer">Soccer</option>
+              <option value="lacrosse">Lacrosse</option>
+              <option value="both">Both</option>
+            </select>
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="text-xs font-bold uppercase text-[#9E9E9E]">Sport</label>
-              <select value={profileForm.sport} onChange={e => setProfileForm({ ...profileForm, sport: e.target.value as Sport })}
-                className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 dark:text-slate-100 p-3 outline-none">
-                <option value="soccer">Soccer</option>
-                <option value="lacrosse">Lacrosse</option>
-                <option value="both">Both</option>
-              </select>
+              <label className="text-xs font-bold uppercase text-[#9E9E9E]">Sport Drills / Day</label>
+              <input type="number" min={0} value={profileForm.sportDrillsPerDay} onChange={e => setProfileForm({ ...profileForm, sportDrillsPerDay: parseInt(e.target.value) || 0 })}
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 dark:text-slate-100 p-3 outline-none" />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-bold uppercase text-[#9E9E9E]">Drills / Day</label>
-              <input type="number" value={profileForm.drillsPerDay} onChange={e => setProfileForm({ ...profileForm, drillsPerDay: parseInt(e.target.value) || 1 })}
+              <label className="text-xs font-bold uppercase text-[#9E9E9E]">S&C Drills / Day</label>
+              <input type="number" min={0} value={profileForm.conditioningDrillsPerDay} onChange={e => setProfileForm({ ...profileForm, conditioningDrillsPerDay: parseInt(e.target.value) || 0 })}
                 className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 dark:text-slate-100 p-3 outline-none" />
             </div>
           </div>
@@ -768,19 +773,24 @@ export default function AdminView({ profiles, drills, goals, history, ratings, t
               <input type="text" value={editingProfile.name} onChange={e => setEditingProfile({ ...editingProfile, name: e.target.value })}
                 className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 dark:text-slate-100 p-3 outline-none focus:border-blue-500" />
             </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold uppercase text-[#9E9E9E]">Sport</label>
+              <select value={editingProfile.sport} onChange={e => setEditingProfile({ ...editingProfile, sport: e.target.value as Sport })}
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 dark:text-slate-100 p-3 outline-none">
+                <option value="soccer">Soccer</option>
+                <option value="lacrosse">Lacrosse</option>
+                <option value="both">Both</option>
+              </select>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-xs font-bold uppercase text-[#9E9E9E]">Sport</label>
-                <select value={editingProfile.sport} onChange={e => setEditingProfile({ ...editingProfile, sport: e.target.value as Sport })}
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 dark:text-slate-100 p-3 outline-none">
-                  <option value="soccer">Soccer</option>
-                  <option value="lacrosse">Lacrosse</option>
-                  <option value="both">Both</option>
-                </select>
+                <label className="text-xs font-bold uppercase text-[#9E9E9E]">Sport Drills / Day</label>
+                <input type="number" min={0} value={editingProfile.sportDrillsPerDay ?? 3} onChange={e => setEditingProfile({ ...editingProfile, sportDrillsPerDay: parseInt(e.target.value) || 0 })}
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 dark:text-slate-100 p-3 outline-none" />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold uppercase text-[#9E9E9E]">Drills / Day</label>
-                <input type="number" value={editingProfile.drillsPerDay} onChange={e => setEditingProfile({ ...editingProfile, drillsPerDay: parseInt(e.target.value) || 1 })}
+                <label className="text-xs font-bold uppercase text-[#9E9E9E]">S&C Drills / Day</label>
+                <input type="number" min={0} value={editingProfile.conditioningDrillsPerDay ?? 1} onChange={e => setEditingProfile({ ...editingProfile, conditioningDrillsPerDay: parseInt(e.target.value) || 0 })}
                   className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 dark:text-slate-100 p-3 outline-none" />
               </div>
             </div>

@@ -141,6 +141,7 @@ export default function DashboardView({ activeProfile, drills, goals, dailyCompl
                   key={drill.id}
                   drill={drill}
                   isDone={!!dailyCompleted[`${activeProfile.id}-${drill.id}`]}
+                  sport={activeProfile.sport}
                   onToggle={() => toggleDrill(drill.id, activeProfile)}
                   onRate={(liked, difficulty) => addDrillRating(drill.id, liked, difficulty, activeProfile.id)}
                 />
