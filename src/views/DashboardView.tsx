@@ -30,6 +30,8 @@ export default function DashboardView({ activeProfile, drills, goals, dailyCompl
     'Notification' in window && Notification.permission === 'granted'
   );
   const [notifDismissed, setNotifDismissed] = useState(() =>
+    'Notification' in window &&
+    Notification.permission !== 'default' &&
     localStorage.getItem(`notif-dismissed-${activeProfile.id}`) === '1'
   );
 
@@ -37,12 +39,8 @@ export default function DashboardView({ activeProfile, drills, goals, dailyCompl
 
   async function handleEnableNotifications() {
     const ok = await subscribeToNotifications(activeProfile.id);
-    if (ok) {
-      setNotifGranted(true);
-    } else {
-      setNotifDismissed(true);
-      localStorage.setItem(`notif-dismissed-${activeProfile.id}`, '1');
-    }
+    if (ok) setNotifGranted(true);
+    // Don't dismiss on failure — leave the banner so they can retry
   }
 
   const profileRatings = ratings.filter(r => r.profileId === activeProfile.id);
