@@ -37,6 +37,14 @@ export default function DashboardView({ activeProfile, drills, goals, dailyCompl
 
   const showNotifBanner = !notifGranted && !notifDismissed && 'Notification' in window;
 
+  // If permission already granted (e.g. via OS settings), ensure the subscription
+  // is saved in the DB — pushManager.subscribe() is idempotent so this is safe.
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      subscribeToNotifications(activeProfile.id);
+    }
+  }, [activeProfile.id]);
+
   async function handleEnableNotifications() {
     const ok = await subscribeToNotifications(activeProfile.id);
     if (ok) setNotifGranted(true);
