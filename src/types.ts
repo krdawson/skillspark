@@ -48,6 +48,7 @@ export interface DailyLog {
   profileId: string;
   date: string;
   completedDrillIds: string[];
+  drillTimes: Record<string, number>; // drillId → cumulative seconds
 }
 
 export interface DrillRating {

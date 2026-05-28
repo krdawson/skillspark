@@ -20,11 +20,12 @@ interface Props {
   calculateStreak: (profileId: string) => number;
   toggleDrill: (drillId: string, profile: Profile) => void;
   addDrillRating: (drillId: string, liked: boolean, difficulty: 1 | 2 | 3, profileId: string) => void;
+  recordDrillTime: (drillId: string, seconds: number, profile: Profile) => void;
   subscribeToNotifications: (profileId: string) => Promise<boolean>;
   onBack: () => void;
 }
 
-export default function DashboardView({ activeProfile, drills, goals, dailyCompleted, history, ratings, calculateStreak, toggleDrill, addDrillRating, subscribeToNotifications, onBack }: Props) {
+export default function DashboardView({ activeProfile, drills, goals, dailyCompleted, history, ratings, calculateStreak, toggleDrill, addDrillRating, recordDrillTime, subscribeToNotifications, onBack }: Props) {
   const [tab, setTab] = useState<'today' | 'history'>('today');
   const [notifGranted, setNotifGranted] = useState(() =>
     'Notification' in window && Notification.permission === 'granted'
@@ -57,6 +58,7 @@ export default function DashboardView({ activeProfile, drills, goals, dailyCompl
   const { level, currentXP, xpToNext } = calculateLevelData(activeProfile.xp || 0);
   const streak = calculateStreak(activeProfile.id);
   const profileHistory = history.filter(h => h.profileId === activeProfile.id).sort((a, b) => b.date.localeCompare(a.date));
+  const todayLog = history.find(h => h.profileId === activeProfile.id && h.date === format(new Date(), 'yyyy-MM-dd'));
 
   return (
     <motion.div
@@ -148,8 +150,10 @@ export default function DashboardView({ activeProfile, drills, goals, dailyCompl
                   drill={drill}
                   isDone={!!dailyCompleted[`${activeProfile.id}-${drill.id}`]}
                   sport={activeProfile.sport}
+                  recordedSeconds={todayLog?.drillTimes?.[drill.id] ?? 0}
                   onToggle={() => toggleDrill(drill.id, activeProfile)}
                   onRate={(liked, difficulty) => addDrillRating(drill.id, liked, difficulty, activeProfile.id)}
+                  onTimeRecorded={(seconds) => recordDrillTime(drill.id, seconds, activeProfile)}
                 />
               ))}
               {todaysDrills.length === 0 && (

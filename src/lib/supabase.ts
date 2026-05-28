@@ -34,6 +34,7 @@ export const toGoal = (r: any) => ({
 export const toLog = (r: any) => ({
   id: r.id, profileId: r.profile_id, date: r.date,
   completedDrillIds: r.completed_drill_ids ?? [],
+  drillTimes: r.drill_times ?? {},
 });
 
 export const toRating = (r: any) => ({
@@ -67,6 +68,7 @@ export const fromGoal = (g: any) => ({
 export const fromLog = (l: any) => ({
   id: l.id, family_id: FAMILY_ID, profile_id: l.profileId,
   date: l.date, completed_drill_ids: l.completedDrillIds,
+  drill_times: l.drillTimes ?? {},
 });
 
 export const fromRating = (r: any) => ({

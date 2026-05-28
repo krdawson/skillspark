@@ -292,7 +292,7 @@ export function useAppState() {
             ? [...new Set([...existingLog.completedDrillIds, drillId])]
             : existingLog.completedDrillIds.filter(id => id !== drillId),
         }
-      : { id: Math.random().toString(36).substr(2, 9), profileId: profile.id, date: today, completedDrillIds: isDone ? [drillId] : [] };
+      : { id: Math.random().toString(36).substr(2, 9), profileId: profile.id, date: today, completedDrillIds: isDone ? [drillId] : [], drillTimes: {} };
 
     // Compute new goals
     let milestoneReached = false;
@@ -506,6 +506,38 @@ export function useAppState() {
     supabase.from('drill_ratings').insert(fromRating(rating)).then();
   }
 
+  // ── Drill time tracking ───────────────────────────────────────────────────
+
+  function recordDrillTime(drillId: string, seconds: number, profile: Profile) {
+    if (seconds <= 0) return;
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const existingLog = history.find(h => h.profileId === profile.id && h.date === today);
+
+    const updatedTimes = {
+      ...(existingLog?.drillTimes ?? {}),
+      [drillId]: (existingLog?.drillTimes?.[drillId] ?? 0) + seconds,
+    };
+
+    if (existingLog) {
+      const updatedLog = { ...existingLog, drillTimes: updatedTimes };
+      setHistory(prev => prev.map(h => h.id === existingLog.id ? updatedLog : h));
+      supabase.from('daily_logs')
+        .update({ drill_times: updatedTimes })
+        .eq('id', existingLog.id).eq('family_id', FAMILY_ID)
+        .then(({ error }) => { if (error) console.error('[recordDrillTime] update failed:', error); });
+    } else {
+      const newLog: DailyLog = {
+        id: Math.random().toString(36).substr(2, 9),
+        profileId: profile.id, date: today,
+        completedDrillIds: [], drillTimes: updatedTimes,
+      };
+      setHistory(prev => [...prev, newLog]);
+      supabase.from('daily_logs')
+        .insert(fromLog(newLog))
+        .then(({ error }) => { if (error) console.error('[recordDrillTime] insert failed:', error); });
+    }
+  }
+
   // ── Backup / Restore ──────────────────────────────────────────────────────
 
   function exportData() {
@@ -560,7 +592,7 @@ export function useAppState() {
     theme, profiles, drills, goals, dailyCompleted, history, ratings, adminPin, notification,
     toggleTheme, showNotification, triggerConfetti,
     toggleDrill, addDrill, updateDrill, deleteDrill,
-    addDrillRating,
+    addDrillRating, recordDrillTime,
     addProfile, updateProfile,
     addGoal, updateGoal, deleteGoal,
     changeAdminPin, exportData, importData,

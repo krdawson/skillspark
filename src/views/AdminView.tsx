@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Moon, Sun, Plus, Users, Trophy, Medal, Dumbbell, ChevronDown, RotateCcw, Download, Upload } from 'lucide-react';
+import { ArrowLeft, Moon, Sun, Plus, Users, Trophy, Medal, Dumbbell, ChevronDown, RotateCcw, Download, Upload, Clock } from 'lucide-react';
 import { PROFILE_COLORS, getProfileColor } from '../lib/profileColors';
 import { format } from 'date-fns';
 import { Profile, Drill, Goal, DailyLog, DrillRating, Sport, DrillType, GoalType, Milestone } from '../types';
@@ -520,6 +520,58 @@ export default function AdminView({ profiles, drills, goals, history, ratings, t
         </div>
       </section>
 
+      {/* ── Practice Time ── */}
+      {(() => {
+        const kidsWithTime = kidProfiles
+          .map(p => {
+            const todayLog = history.find(h => h.profileId === p.id && h.date === todayStr);
+            const times = todayLog?.drillTimes ?? {};
+            const totalSecs = Object.values(times).reduce((a, b) => a + b, 0);
+            return { profile: p, times, totalSecs };
+          })
+          .filter(k => k.totalSecs > 0);
+
+        if (kidsWithTime.length === 0) return null;
+
+        const familyTotal = kidsWithTime.reduce((acc, k) => acc + k.totalSecs, 0);
+
+        return (
+          <section className="mb-10">
+            <div className="flex items-center gap-3 mb-5">
+              <Clock size={20} className="text-[#FF6321]" />
+              <h2 className="text-xl font-black dark:text-slate-100">Practice Time Today</h2>
+            </div>
+            <div className="space-y-3">
+              {kidsWithTime.map(({ profile: p, times, totalSecs }) => (
+                <div key={p.id} className="rounded-2xl bg-white dark:bg-slate-900 p-4 shadow-sm">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="font-bold text-sm dark:text-slate-100">{p.name}</p>
+                    <span className="text-sm font-black text-[#FF6321]">{formatAdminTime(totalSecs)}</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {Object.entries(times).map(([drillId, secs]) => {
+                      const drill = drills.find(d => d.id === drillId);
+                      return (
+                        <div key={drillId} className="flex items-center justify-between">
+                          <span className="text-xs text-slate-500 dark:text-slate-400 truncate mr-4">{drill?.title ?? 'Unknown drill'}</span>
+                          <span className="text-xs font-mono font-bold text-slate-400 shrink-0">{formatAdminTime(secs)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+              {kidsWithTime.length > 1 && (
+                <div className="rounded-2xl bg-slate-800 dark:bg-slate-700 px-4 py-3 flex items-center justify-between">
+                  <p className="text-sm font-black text-white">Family Total</p>
+                  <span className="text-sm font-black text-[#FF6321]">{formatAdminTime(familyTotal)}</span>
+                </div>
+              )}
+            </div>
+          </section>
+        );
+      })()}
+
       {/* ── Drill Library ── */}
       <section className="mb-10">
         <div className="flex items-center justify-between mb-5">
@@ -998,6 +1050,13 @@ export default function AdminView({ profiles, drills, goals, history, ratings, t
       </datalist>
     </motion.div>
   );
+}
+
+function formatAdminTime(secs: number): string {
+  if (secs < 60) return `${secs}s`;
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return s > 0 ? `${m}m ${s}s` : `${m}m`;
 }
 
 const DIFF_LABEL: Record<number, string> = { 1: 'Easy', 2: 'Medium', 3: 'Hard' };

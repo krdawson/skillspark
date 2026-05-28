@@ -90,6 +90,7 @@ export default function App() {
               calculateStreak={state.calculateStreak}
               toggleDrill={state.toggleDrill}
               addDrillRating={state.addDrillRating}
+              recordDrillTime={state.recordDrillTime}
               subscribeToNotifications={state.subscribeToNotifications}
               onBack={handleBack}
             />
