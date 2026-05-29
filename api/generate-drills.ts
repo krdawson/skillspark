@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Anthropic from '@anthropic-ai/sdk';
-import { requireUser } from './_auth';
+import { requireUser } from './_auth.js';
 
 const client = new Anthropic();
 

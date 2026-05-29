@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { isAuthorizedCron } from '../_auth';
+import { isAuthorizedCron } from '../_auth.js';
 
 // Pings Supabase once a day to prevent the free-tier project from
 // pausing after 7 days of inactivity.

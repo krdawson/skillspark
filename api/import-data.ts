@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { adminClient, requireUser } from './_auth';
+import { adminClient, requireUser } from './_auth.js';
 
 const FAMILY_ID = process.env.VITE_FAMILY_ID!;
 

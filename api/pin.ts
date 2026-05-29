@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { randomBytes, scryptSync, timingSafeEqual } from 'crypto';
-import { adminClient, requireUser } from './_auth';
+import { adminClient, requireUser } from './_auth.js';
 
 // ── PIN hashing (salted scrypt) ───────────────────────────────────────────────
 function hashPin(pin: string): string {

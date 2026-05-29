@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import webPush from 'web-push';
-import { isAuthorizedCron } from '../_auth';
+import { isAuthorizedCron } from '../_auth.js';
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL!,
