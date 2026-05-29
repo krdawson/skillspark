@@ -22,8 +22,11 @@
 create extension if not exists pgcrypto;
 
 -- 1. Separate, client-inaccessible table for kid PIN hashes ───────────────────
+-- profile_id is the same type as profiles.id (text — IDs are values like '1',
+-- 'a1b2c3d4e'). No FK: profiles.id has no unique constraint to reference, and an
+-- FK isn't needed here — clearPin / profile deletion are handled in app code.
 create table if not exists public.profile_pins (
-  profile_id uuid primary key references public.profiles(id) on delete cascade,
+  profile_id text primary key,
   pin_hash   text not null,
   updated_at timestamptz not null default now()
 );
