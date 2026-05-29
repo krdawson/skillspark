@@ -1,12 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createClient } from '@supabase/supabase-js';
 import webPush from 'web-push';
-import { isAuthorizedCron } from '../_auth.js';
+import { adminClient, isAuthorizedCron, FAMILY_ID } from '../_auth.js';
 
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+const supabase = adminClient();
 
 webPush.setVapidDetails(
   process.env.VAPID_CONTACT!,
@@ -17,7 +13,7 @@ webPush.setVapidDetails(
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!isAuthorizedCron(req)) return res.status(401).end();
 
-  const familyId = process.env.VITE_FAMILY_ID!;
+  const familyId = FAMILY_ID;
 
   // Load settings — check notifications are enabled and not already sent today
   const { data: settings } = await supabase

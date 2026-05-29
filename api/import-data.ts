@@ -1,7 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { adminClient, requireUser } from './_auth.js';
-
-const FAMILY_ID = process.env.VITE_FAMILY_ID!;
+import { adminClient, requireUser, FAMILY_ID } from './_auth.js';
 
 // App-shape → row-shape mappers (mirror src/lib/supabase.ts, minus the dropped pin column).
 const fromProfile = (p: any) => ({

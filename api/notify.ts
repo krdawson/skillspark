@@ -1,12 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createClient } from '@supabase/supabase-js';
 import webPush from 'web-push';
-import { requireUser } from './_auth.js';
+import { adminClient, requireUser } from './_auth.js';
 
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+const supabase = adminClient();
 
 webPush.setVapidDetails(
   process.env.VAPID_CONTACT!,

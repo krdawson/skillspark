@@ -1,10 +1,16 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient, type SupabaseClient, type User } from '@supabase/supabase-js';
 
+// URL and family ID are public (also hardcoded as fallbacks in src/lib/supabase.ts),
+// so we fall back to them when the env var isn't set in the deployment. The
+// service_role KEY has no fallback — it's a secret and must come from the env.
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://cbdjrxileqcbouealmuy.supabase.co';
+export const FAMILY_ID = process.env.VITE_FAMILY_ID || '66b6d6ab-b010-407f-921e-3aa8b43df317';
+
 // service_role client — bypasses RLS. Server-only; the key is never exposed to the browser.
 export function adminClient(): SupabaseClient {
   return createClient(
-    process.env.VITE_SUPABASE_URL!,
+    SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { persistSession: false, autoRefreshToken: false } },
   );

@@ -1,16 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createClient } from '@supabase/supabase-js';
-import { isAuthorizedCron } from '../_auth.js';
+import { adminClient, isAuthorizedCron } from '../_auth.js';
 
 // Pings Supabase once a day to prevent the free-tier project from
 // pausing after 7 days of inactivity.
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!isAuthorizedCron(req)) return res.status(401).end();
 
-  const supabase = createClient(
-    process.env.VITE_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
+  const supabase = adminClient();
 
   const { error } = await supabase.from('settings').select('family_id').limit(1);
 
