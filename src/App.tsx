@@ -15,7 +15,7 @@ export default function App() {
   const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
   const initializedRef = useRef(false);
 
-  const { session, authLoading, signInWithGoogle, signOut } = useAuth();
+  const { isParent, authLoading, signInWithGoogle, signOut } = useAuth();
   const state = useAppState();
 
   const activeProfile = state.profiles.find(p => p.id === activeProfileId) ?? null;
@@ -25,8 +25,8 @@ export default function App() {
     if (authLoading || state.isLoading) return;
     if (initializedRef.current) return;
     initializedRef.current = true;
-    if (session) setView('admin');
-  }, [authLoading, state.isLoading, session]);
+    if (isParent) setView('admin');
+  }, [authLoading, state.isLoading, isParent]);
 
   function handleLogin(profile: Profile, dest: 'dashboard' | 'admin') {
     setActiveProfileId(profile.id);
@@ -70,10 +70,10 @@ export default function App() {
               key="selection"
               profiles={state.profiles}
               goals={state.goals}
-              adminPin={state.adminPin}
               calculateStreak={state.calculateStreak}
               showNotification={state.showNotification}
-              updateProfile={state.updateProfile}
+              verifyPin={state.verifyPin}
+              setPin={state.setPin}
               signInWithGoogle={signInWithGoogle}
               onLogin={handleLogin}
             />
@@ -116,6 +116,7 @@ export default function App() {
               updateGoal={state.updateGoal}
               deleteGoal={state.deleteGoal}
               changeAdminPin={state.changeAdminPin}
+              clearPin={state.clearPin}
               exportData={state.exportData}
               importData={state.importData}
               notificationTime={state.notificationTime}
