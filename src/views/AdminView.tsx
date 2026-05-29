@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Moon, Sun, Plus, Users, Trophy, Medal, Dumbbell, ChevronDown, RotateCcw, Download, Upload, Clock } from 'lucide-react';
 import { PROFILE_COLORS, getProfileColor } from '../lib/profileColors';
+import { authedFetch } from '../lib/supabase';
 import { format } from 'date-fns';
 import { Profile, Drill, Goal, DailyLog, DrillRating, Sport, DrillType, GoalType, Milestone } from '../types';
 import { cn } from '../lib/cn';
@@ -31,8 +32,9 @@ interface Props {
   updateGoal: (goal: Goal) => void;
   deleteGoal: (id: string) => void;
   changeAdminPin: (pin: string) => void;
+  clearPin: (profileId: string) => Promise<void>;
   exportData: () => void;
-  importData: (json: string) => boolean;
+  importData: (json: string) => Promise<boolean>;
   notificationTime: string;
   notificationEnabled: boolean;
   updateNotificationSettings: (s: { time?: string; enabled?: boolean }) => void;
@@ -51,7 +53,7 @@ function newMilestone(): Milestone {
   return { id: Math.random().toString(36).substr(2, 9), target: 10, reward: '', isAchieved: false };
 }
 
-export default function AdminView({ profiles, drills, goals, history, ratings, theme, adminPin, toggleTheme, showNotification, addProfile, updateProfile, addDrill, updateDrill, deleteDrill, addGoal, updateGoal, deleteGoal, changeAdminPin, exportData, importData, notificationTime, notificationEnabled, updateNotificationSettings, subscribeToNotifications, onSignOut, onBack }: Props) {
+export default function AdminView({ profiles, drills, goals, history, ratings, theme, adminPin, toggleTheme, showNotification, addProfile, updateProfile, addDrill, updateDrill, deleteDrill, addGoal, updateGoal, deleteGoal, changeAdminPin, clearPin, exportData, importData, notificationTime, notificationEnabled, updateNotificationSettings, subscribeToNotifications, onSignOut, onBack }: Props) {
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
 
   // Drill modal
@@ -172,9 +174,9 @@ export default function AdminView({ profiles, drills, goals, history, ratings, t
     setEditingProfile(null);
   }
 
-  function resetKidPin() {
+  async function resetKidPin() {
     if (!editingProfile) return;
-    updateProfile({ ...editingProfile, pin: undefined });
+    await clearPin(editingProfile.id);
     showNotification('PIN Reset! They will set a new one next login. 🔄');
     setEditProfileOpen(false);
     setEditingProfile(null);
@@ -204,8 +206,8 @@ export default function AdminView({ profiles, drills, goals, history, ratings, t
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = ev => {
-      const ok = importData(ev.target?.result as string);
+    reader.onload = async ev => {
+      const ok = await importData(ev.target?.result as string);
       if (ok) setBackupModalOpen(false);
       setRestoring(false);
     };
@@ -226,9 +228,8 @@ export default function AdminView({ profiles, drills, goals, history, ratings, t
     setAiGenerating(true);
     try {
       const sport = aiSport === 'conditioning' ? 'soccer' : aiSport;
-      const res = await fetch('/api/generate-drills', {
+      const res = await authedFetch('/api/generate-drills', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sport, name: 'Library', drillsPerDay: aiCount, recentDrills: [] }),
       });
       const data = await res.json();

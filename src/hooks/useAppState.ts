@@ -5,7 +5,7 @@ import { Profile, Drill, Goal, DailyLog, DrillRating, Sport, DrillType, GoalType
 import { INITIAL_DRILLS } from '../constants';
 import { BADGE_DEFINITIONS } from '../lib/badges';
 import { calculateStreak, calculateLevelData } from '../lib/utils';
-import { supabase, FAMILY_ID, toProfile, toDrill, toGoal, toLog, toRating, fromProfile, fromDrill, fromGoal, fromLog, fromRating } from '../lib/supabase';
+import { supabase, FAMILY_ID, ensureSession, authedFetch, toProfile, toDrill, toGoal, toLog, toRating, fromProfile, fromDrill, fromGoal, fromLog, fromRating } from '../lib/supabase';
 
 // ── Default seed data ───────────────────────────────────────────────────────
 
@@ -149,6 +149,7 @@ export function useAppState() {
   async function loadAllData() {
     setIsLoading(true);
     try {
+      await ensureSession(); // RLS requires an authenticated (anon or Google) session
       const [
         { data: profileRows },
         { data: drillRows },
@@ -162,7 +163,10 @@ export function useAppState() {
         supabase.from('goals').select('*').eq('family_id', FAMILY_ID),
         supabase.from('daily_logs').select('*').eq('family_id', FAMILY_ID),
         supabase.from('drill_ratings').select('*').eq('family_id', FAMILY_ID),
-        supabase.from('settings').select('*').eq('family_id', FAMILY_ID).maybeSingle(),
+        // Explicit columns: admin_pin is no longer client-readable (revoked).
+        supabase.from('settings')
+          .select('theme, notification_time, notification_enabled')
+          .eq('family_id', FAMILY_ID).maybeSingle(),
       ]);
 
       if (!profileRows?.length) {
@@ -195,7 +199,6 @@ export function useAppState() {
       setDailyCompleted(completed);
 
       if (settingsRow) {
-        setAdminPinState(settingsRow.admin_pin);
         setTheme(settingsRow.theme as 'light' | 'dark');
         setNotificationTime(settingsRow.notification_time ?? '09:00');
         setNotificationEnabled(settingsRow.notification_enabled ?? true);
@@ -337,9 +340,8 @@ export function useAppState() {
     const wasComplete = existingLog ? existingLog.completedDrillIds.length >= totalDrills : false;
     const isNowComplete = isDone && newLog.completedDrillIds.length >= totalDrills;
     if (isNowComplete && !wasComplete) {
-      fetch('/api/notify', {
+      authedFetch('/api/notify', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           familyId: FAMILY_ID,
           targetAdmins: true,
@@ -466,9 +468,8 @@ export function useAppState() {
         applicationServerKey: urlBase64ToUint8Array(import.meta.env.VITE_VAPID_PUBLIC_KEY as string),
       });
 
-      await fetch('/api/subscribe', {
+      await authedFetch('/api/subscribe', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ profileId, subscription: sub.toJSON(), familyId: FAMILY_ID }),
       });
       return true;
@@ -491,6 +492,39 @@ export function useAppState() {
     setAdminPinState(newPin);
     supabase.from('settings').update({ admin_pin: newPin }).eq('family_id', FAMILY_ID).then();
     showNotification('PIN updated! 🔒');
+  }
+
+  // ── Kid PIN (verified/stored server-side; never held in client state) ──────
+
+  async function verifyPin(profileId: string, pin: string): Promise<boolean> {
+    try {
+      const res = await authedFetch('/api/pin', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'verify', profileId, pin }),
+      });
+      const data = await res.json();
+      return res.ok && data.ok === true;
+    } catch { return false; }
+  }
+
+  async function setPin(profileId: string, pin: string): Promise<boolean> {
+    try {
+      const res = await authedFetch('/api/pin', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'set', profileId, pin }),
+      });
+      if (!res.ok) return false;
+      setProfiles(prev => prev.map(p => p.id === profileId ? { ...p, hasPin: true } : p));
+      return true;
+    } catch { return false; }
+  }
+
+  async function clearPin(profileId: string): Promise<void> {
+    await authedFetch('/api/pin', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'clear', profileId }),
+    }).catch(() => {});
+    setProfiles(prev => prev.map(p => p.id === profileId ? { ...p, hasPin: false } : p));
   }
 
   // ── Drill ratings ─────────────────────────────────────────────────────────
@@ -553,23 +587,34 @@ export function useAppState() {
   }
 
   async function importData(jsonString: string) {
+    let data: any;
     try {
-      const data = JSON.parse(jsonString);
-      if (!data.version || !data.profiles) throw new Error('Invalid backup file');
+      data = JSON.parse(jsonString);
+      if (!data.version || !Array.isArray(data.profiles) || !data.profiles.length) {
+        throw new Error('Invalid backup file');
+      }
+    } catch {
+      showNotification('Invalid backup file — restore failed.', true);
+      return false;
+    }
 
-      // Wipe existing data then reinsert
-      await Promise.all([
-        supabase.from('profiles').delete().eq('family_id', FAMILY_ID),
-        supabase.from('drills').delete().eq('family_id', FAMILY_ID),
-        supabase.from('goals').delete().eq('family_id', FAMILY_ID),
-        supabase.from('daily_logs').delete().eq('family_id', FAMILY_ID),
-      ]);
-      await Promise.all([
-        data.profiles && supabase.from('profiles').insert((data.profiles as Profile[]).map(fromProfile)),
-        data.drills   && supabase.from('drills').insert((data.drills as Drill[]).map(fromDrill)),
-        data.goals    && supabase.from('goals').insert((data.goals as Goal[]).map(fromGoal)),
-        data.history  && supabase.from('daily_logs').insert((data.history as DailyLog[]).map(fromLog)),
-      ]);
+    // The destructive wipe + restore runs server-side (service_role) and requires
+    // a real parent (Google) session — see api/import-data.ts.
+    try {
+      const res = await authedFetch('/api/import-data', {
+        method: 'POST',
+        body: JSON.stringify({
+          profiles: data.profiles,
+          drills: data.drills,
+          goals: data.goals,
+          history: data.history,
+        }),
+      });
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: '' }));
+        showNotification(error || 'Restore failed.', true);
+        return false;
+      }
 
       if (data.profiles)       setProfiles(data.profiles);
       if (data.drills)         setDrills(data.drills);
@@ -580,7 +625,7 @@ export function useAppState() {
       showNotification('Data restored! ✅');
       return true;
     } catch {
-      showNotification('Invalid backup file — restore failed.', true);
+      showNotification('Restore failed — network error.', true);
       return false;
     }
   }
@@ -595,7 +640,7 @@ export function useAppState() {
     addDrillRating, recordDrillTime,
     addProfile, updateProfile,
     addGoal, updateGoal, deleteGoal,
-    changeAdminPin, exportData, importData,
+    changeAdminPin, verifyPin, setPin, clearPin, exportData, importData,
     notificationTime, notificationEnabled, subscribeToNotifications, updateNotificationSettings,
     calculateStreak: (profileId: string) => calculateStreak(profileId, history, profiles),
   };

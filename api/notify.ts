@@ -1,10 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import webPush from 'web-push';
+import { requireUser } from './_auth';
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL!,
-  process.env.VITE_SUPABASE_ANON_KEY!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
 webPush.setVapidDetails(
@@ -15,6 +16,7 @@ webPush.setVapidDetails(
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).end();
+  if (!(await requireUser(req, res))) return;
 
   const { familyId, profileIds, targetAdmins, title, body } = req.body ?? {};
   if (!familyId || !title) return res.status(400).json({ error: 'Missing required fields' });

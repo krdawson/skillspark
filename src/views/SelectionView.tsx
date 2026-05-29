@@ -10,15 +10,15 @@ import Modal from '../components/Modal';
 interface Props {
   profiles: Profile[];
   goals: Goal[];
-  adminPin: string;
   calculateStreak: (profileId: string) => number;
   showNotification: (msg: string) => void;
-  updateProfile: (profile: Profile) => void;
+  verifyPin: (profileId: string, pin: string) => Promise<boolean>;
+  setPin: (profileId: string, pin: string) => Promise<boolean>;
   signInWithGoogle: () => Promise<void>;
   onLogin: (profile: Profile, dest: 'dashboard' | 'admin') => void;
 }
 
-export default function SelectionView({ profiles, goals, adminPin, calculateStreak, showNotification, updateProfile, signInWithGoogle, onLogin }: Props) {
+export default function SelectionView({ profiles, goals, calculateStreak, showNotification, verifyPin, setPin, signInWithGoogle, onLogin }: Props) {
   const [loginProfile, setLoginProfile] = useState<Profile | null>(null);
   const [isSettingPin, setIsSettingPin] = useState(false);
   const [pinInput, setPinInput] = useState('');
@@ -32,23 +32,32 @@ export default function SelectionView({ profiles, goals, adminPin, calculateStre
   const kidProfiles = profiles.filter(p => p.role === 'kid');
   const pinnedProfile = deviceProfileId ? kidProfiles.find(p => p.id === deviceProfileId) : null;
 
+  const [busy, setBusy] = useState(false);
+
   function handleProfileClick(profile: Profile) {
     setLoginProfile(profile);
     setPinInput('');
     setTempPin('');
-    setIsSettingPin(!profile.pin);
+    setIsSettingPin(!profile.hasPin);
   }
 
-  function handleKidLogin() {
-    if (!loginProfile) return;
+  async function handleKidLogin() {
+    if (!loginProfile || busy) return;
     if (isSettingPin) {
       if (tempPin.length !== 4) { showNotification('Enter 4 digits!'); return; }
-      updateProfile({ ...loginProfile, pin: tempPin });
+      setBusy(true);
+      const ok = await setPin(loginProfile.id, tempPin);
+      setBusy(false);
+      if (!ok) { showNotification('Could not set PIN. Try again.'); return; }
       showNotification('PIN Created! Welcome 🚀');
-      onLogin({ ...loginProfile, pin: tempPin }, 'dashboard');
+      onLogin({ ...loginProfile, hasPin: true }, 'dashboard');
       closeModal();
     } else {
-      if (pinInput === loginProfile.pin) {
+      if (pinInput.length !== 4) { showNotification('Enter your 4-digit PIN.'); return; }
+      setBusy(true);
+      const ok = await verifyPin(loginProfile.id, pinInput);
+      setBusy(false);
+      if (ok) {
         onLogin(loginProfile, 'dashboard');
         closeModal();
       } else {
@@ -115,7 +124,7 @@ export default function SelectionView({ profiles, goals, adminPin, calculateStre
                 onKeyDown={e => {
                   if (e.key === 'Enter') {
                     setLoginProfile(pinnedProfile);
-                    setIsSettingPin(!pinnedProfile.pin);
+                    setIsSettingPin(!pinnedProfile.hasPin);
                     handleKidLoginPinned();
                   }
                 }}
@@ -124,7 +133,7 @@ export default function SelectionView({ profiles, goals, adminPin, calculateStre
               <button
                 onClick={() => {
                   setLoginProfile(pinnedProfile);
-                  setIsSettingPin(!pinnedProfile.pin);
+                  setIsSettingPin(!pinnedProfile.hasPin);
                   handleKidLoginPinned();
                 }}
                 className="w-full rounded-2xl bg-[#FF6321] py-4 font-black text-white active:scale-95 transition-transform"
@@ -144,17 +153,25 @@ export default function SelectionView({ profiles, goals, adminPin, calculateStre
       </>
     );
 
-    function handleKidLoginPinned() {
+    async function handleKidLoginPinned() {
       const profile = pinnedProfile!;
-      const settingPin = !profile.pin;
+      const settingPin = !profile.hasPin;
+      if (busy) return;
       if (settingPin) {
         if (tempPin.length !== 4) { showNotification('Enter 4 digits!'); return; }
-        updateProfile({ ...profile, pin: tempPin });
+        setBusy(true);
+        const ok = await setPin(profile.id, tempPin);
+        setBusy(false);
+        if (!ok) { showNotification('Could not set PIN. Try again.'); return; }
         showNotification('PIN Created! Welcome 🚀');
-        onLogin({ ...profile, pin: tempPin }, 'dashboard');
+        onLogin({ ...profile, hasPin: true }, 'dashboard');
         setTempPin('');
       } else {
-        if (pinInput === profile.pin) {
+        if (pinInput.length !== 4) { showNotification('Enter your 4-digit PIN.'); return; }
+        setBusy(true);
+        const ok = await verifyPin(profile.id, pinInput);
+        setBusy(false);
+        if (ok) {
           onLogin(profile, 'dashboard');
           setPinInput('');
         } else {

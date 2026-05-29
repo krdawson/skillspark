@@ -8,7 +8,7 @@ export interface Profile {
   sport: Sport;
   sportDrillsPerDay: number;
   conditioningDrillsPerDay: number;
-  pin?: string;
+  hasPin?: boolean;
   xp?: number;
   badges?: string[];
   color?: string;

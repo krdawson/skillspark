@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Anthropic from '@anthropic-ai/sdk';
+import { requireUser } from './_auth';
 
 const client = new Anthropic();
 
@@ -20,6 +21,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!process.env.ANTHROPIC_API_KEY) {
     return res.status(500).json({ error: 'ANTHROPIC_API_KEY is not configured' });
   }
+
+  // Require a valid session so this paid endpoint can't be hit anonymously.
+  if (!(await requireUser(req, res))) return;
 
   const { sport, name, drillsPerDay, recentDrills = [] } = req.body ?? {};
   if (!sport || !name || !drillsPerDay) {
@@ -67,7 +71,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       messages: [{ role: 'user', content: userMessage }],
     });
 
-    const text = response.content[0].type === 'text' ? response.content[0].text : '';
+    const block = response.content[0];
+    const text = block?.type === 'text' ? block.text : '';
+    if (!text) return res.status(502).json({ error: 'Empty response from model' });
     const parsed = JSON.parse(text) as { drills: any[] };
 
     console.log(`[generate-drills] ok — ${response.usage.input_tokens}in / ${response.usage.output_tokens}out tokens`);
